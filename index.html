@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Escáner QR</title>
+  <title>Escáner Keila QR</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -40,18 +40,8 @@
     }
     #visor.activo { display: block; }
     #reader { width: 100%; height: 100%; }
-    .marco {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-    }
-    .esquina {
-      position: absolute;
-      width: 28px;
-      height: 28px;
-      border-color: #1a73e8;
-      border-style: solid;
-    }
+    .marco { position: absolute; inset: 0; pointer-events: none; }
+    .esquina { position: absolute; width: 28px; height: 28px; border-color: #1a73e8; border-style: solid; }
     .esquina.tl { top: 14px; left: 14px; border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
     .esquina.tr { top: 14px; right: 14px; border-width: 3px 3px 0 0; border-radius: 0 4px 0 0; }
     .esquina.bl { bottom: 14px; left: 14px; border-width: 0 0 3px 3px; border-radius: 0 0 0 4px; }
@@ -72,30 +62,12 @@
     #btn:hover { background: #1557b0; }
     #btn.detener { background: #e8453c; }
     #btn.detener:hover { background: #c5221f; }
-    #estado {
-      font-size: 14px;
-      text-align: center;
-      color: #666;
-      min-height: 20px;
-      padding: 0 8px;
-    }
+    #estado { font-size: 14px; text-align: center; color: #666; min-height: 20px; padding: 0 8px; }
     #estado.ok { color: #188038; font-weight: bold; }
     #estado.err { color: #c5221f; }
     #estado.leyendo { color: #1a73e8; }
-    #historial {
-      width: 100%;
-      max-height: 180px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .registro {
-      background: #f0f7ff;
-      border-left: 4px solid #1a73e8;
-      border-radius: 8px;
-      padding: 8px 12px;
-    }
+    #historial { width: 100%; max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+    .registro { background: #f0f7ff; border-left: 4px solid #1a73e8; border-radius: 8px; padding: 8px 12px; }
     .registro .hora { font-size: 11px; color: #888; margin-bottom: 2px; }
     .registro .valor { font-size: 14px; font-weight: bold; color: #1a1a1a; word-break: break-all; }
     .vacio { font-size: 13px; color: #bbb; text-align: center; width: 100%; padding: 10px 0; }
@@ -103,7 +75,7 @@
 </head>
 <body>
 <div class="card">
-  <h1>📋 Escáner Keila QR → Google Sheets</h1>
+  <h1>📋 Escáner QR → Google Sheets</h1>
 
   <div id="visor">
     <div id="reader"></div>
@@ -116,9 +88,7 @@
   </div>
 
   <button id="btn" onclick="toggleScanner()">📷 Escanear código QR</button>
-
   <div id="estado">Presiona el botón para comenzar</div>
-
   <div id="historial">
     <p class="vacio">Los registros aparecerán aquí</p>
   </div>
@@ -172,13 +142,13 @@
 
     fetch(API_URL, {
       method: 'POST',
+      mode: 'no-cors',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({ texto: texto })
     })
-    .then(r => r.json())
-    .then(res => {
-      setEstado('✓ Guardado en fila ' + res.fila, 'ok');
-      agregarHistorial(res.texto, res.fila);
+    .then(() => {
+      setEstado('✓ Guardado', 'ok');
+      agregarHistorial(texto, '—');
       setTimeout(() => { procesando = false; }, 2000);
     })
     .catch(() => {
@@ -200,7 +170,7 @@
     const div = document.createElement('div');
     div.className = 'registro';
     const hora = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    div.innerHTML = `<div class="hora">${hora} — fila ${fila}</div><div class="valor">${texto}</div>`;
+    div.innerHTML = `<div class="hora">${hora}</div><div class="valor">${texto}</div>`;
     hist.insertBefore(div, hist.firstChild);
   }
 </script>
