@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Escáner QR</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f4f8;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .card {
+      background: white;
+      border-radius: 20px;
+      padding: 28px 20px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.10);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+    }
+    h1 { font-size: 18px; color: #1a1a1a; text-align: center; }
+    #visor {
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #111;
+      display: none;
+      position: relative;
+    }
+    #visor.activo { display: block; }
+    #reader { width: 100%; height: 100%; }
+    .marco {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+    .esquina {
+      position: absolute;
+      width: 28px;
+      height: 28px;
+      border-color: #1a73e8;
+      border-style: solid;
+    }
+    .esquina.tl { top: 14px; left: 14px; border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
+    .esquina.tr { top: 14px; right: 14px; border-width: 3px 3px 0 0; border-radius: 0 4px 0 0; }
+    .esquina.bl { bottom: 14px; left: 14px; border-width: 0 0 3px 3px; border-radius: 0 0 0 4px; }
+    .esquina.br { bottom: 14px; right: 14px; border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
+    #btn {
+      width: 100%;
+      padding: 16px;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      background: #1a73e8;
+      color: white;
+      transition: background 0.2s, transform 0.1s;
+    }
+    #btn:active { transform: scale(0.98); }
+    #btn:hover { background: #1557b0; }
+    #btn.detener { background: #e8453c; }
+    #btn.detener:hover { background: #c5221f; }
+    #estado {
+      font-size: 14px;
+      text-align: center;
+      color: #666;
+      min-height: 20px;
+      padding: 0 8px;
+    }
+    #estado.ok { color: #188038; font-weight: bold; }
+    #estado.err { color: #c5221f; }
+    #estado.leyendo { color: #1a73e8; }
+    #historial {
+      width: 100%;
+      max-height: 180px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .registro {
+      background: #f0f7ff;
+      border-left: 4px solid #1a73e8;
+      border-radius: 8px;
+      padding: 8px 12px;
+    }
+    .registro .hora { font-size: 11px; color: #888; margin-bottom: 2px; }
+    .registro .valor { font-size: 14px; font-weight: bold; color: #1a1a1a; word-break: break-all; }
+    .vacio { font-size: 13px; color: #bbb; text-align: center; width: 100%; padding: 10px 0; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h1>📋 Escáner Keila QR → Google Sheets</h1>
+
+  <div id="visor">
+    <div id="reader"></div>
+    <div class="marco">
+      <div class="esquina tl"></div>
+      <div class="esquina tr"></div>
+      <div class="esquina bl"></div>
+      <div class="esquina br"></div>
+    </div>
+  </div>
+
+  <button id="btn" onclick="toggleScanner()">📷 Escanear código QR</button>
+
+  <div id="estado">Presiona el botón para comenzar</div>
+
+  <div id="historial">
+    <p class="vacio">Los registros aparecerán aquí</p>
+  </div>
+</div>
+
+<script>
+  const API_URL = 'https://script.google.com/a/macros/tec.mx/s/AKfycbzCHyzDnEeETsVdfPJUKfoGxZwMnwlezzz5JVOYcdGh9rwvPUENd2FcD5Aowq6HsDnK/exec'; // pega aquí tu URL /exec de Apps Script
+
+  let scanner = null;
+  let escaneando = false;
+  let procesando = false;
+
+  function toggleScanner() {
+    escaneando ? detener() : iniciar();
+  }
+
+  function iniciar() {
+    document.getElementById('visor').classList.add('activo');
+    document.getElementById('btn').textContent = '⏹ Detener escáner';
+    document.getElementById('btn').classList.add('detener');
+    setEstado('Apunta la cámara al código QR...', 'leyendo');
+    escaneando = true;
+
+    scanner = new Html5Qrcode('reader');
+    scanner.start(
+      { facingMode: 'environment' },
+      { fps: 10, qrbox: { width: 220, height: 220 } },
+      onScanExito,
+      () => {}
+    ).catch(err => {
+      setEstado('No se pudo acceder a la cámara: ' + err, 'err');
+      detener();
+    });
+  }
+
+  function detener() {
+    if (scanner) {
+      scanner.stop().then(() => { scanner.clear(); scanner = null; }).catch(() => {});
+    }
+    document.getElementById('visor').classList.remove('activo');
+    document.getElementById('btn').textContent = '📷 Escanear código QR';
+    document.getElementById('btn').classList.remove('detener');
+    escaneando = false;
+    procesando = false;
+  }
+
+  function onScanExito(texto) {
+    if (procesando) return;
+    procesando = true;
+    setEstado('Guardando...', 'leyendo');
+
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ texto: texto })
+    })
+    .then(r => r.json())
+    .then(res => {
+      setEstado('✓ Guardado en fila ' + res.fila, 'ok');
+      agregarHistorial(res.texto, res.fila);
+      setTimeout(() => { procesando = false; }, 2000);
+    })
+    .catch(() => {
+      setEstado('Error al guardar', 'err');
+      procesando = false;
+    });
+  }
+
+  function setEstado(msg, clase) {
+    const el = document.getElementById('estado');
+    el.textContent = msg;
+    el.className = clase || '';
+  }
+
+  function agregarHistorial(texto, fila) {
+    const hist = document.getElementById('historial');
+    const vacio = hist.querySelector('.vacio');
+    if (vacio) vacio.remove();
+    const div = document.createElement('div');
+    div.className = 'registro';
+    const hora = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    div.innerHTML = `<div class="hora">${hora} — fila ${fila}</div><div class="valor">${texto}</div>`;
+    hist.insertBefore(div, hist.firstChild);
+  }
+</script>
+</body>
+</html>
