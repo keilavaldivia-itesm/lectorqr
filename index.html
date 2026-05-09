@@ -93,7 +93,7 @@
 </div>
 
 <script>
-  const API_URL = 'https://script.google.com/macros/s/AKfycbz_dFnJJGgPk3TDeKUn8cmIRIdArY1Gx1uZMnENrGA3Q4jNe0FgsL_-i-n5XEra8pMe/exec';
+  const API_URL = 'https://script.google.com/macros/s/AKfycbzC5gWCAl0IVIKRGmoyShraViPjkzCE5oXG_1XTXCEwNlWyoS3V5JlQhqSoj28TxVET/exec';
 
   let scanner = null;
   let escaneando = false;
@@ -132,58 +132,4 @@
       onScanExito,
       () => {}
     ).catch(err => {
-      setEstado('No se pudo acceder a la cámara: ' + err, 'err');
-      detener();
-    });
-  }
-
-  function detener() {
-    if (scanner) {
-      scanner.stop().then(() => { scanner.clear(); scanner = null; }).catch(() => {});
-    }
-    document.getElementById('visor').classList.remove('activo');
-    document.getElementById('btn').textContent = '📷 Escanear código QR';
-    document.getElementById('btn').classList.remove('detener');
-    escaneando = false;
-    procesando = false;
-  }
-
-  function onScanExito(texto) {
-    if (procesando) return;
-    procesando = true;
-    reproducirSonido();
-    setEstado('Guardando...', 'leyendo');
-
-    const url = API_URL + '?texto=' + encodeURIComponent(texto);
-
-    fetch(url, { mode: 'no-cors' })
-      .then(() => {
-        setEstado('✓ Guardado', 'ok');
-        agregarHistorial(texto);
-        setTimeout(() => { procesando = false; }, 2000);
-      })
-      .catch(() => {
-        setEstado('Error al guardar', 'err');
-        procesando = false;
-      });
-  }
-
-  function setEstado(msg, clase) {
-    const el = document.getElementById('estado');
-    el.textContent = msg;
-    el.className = clase || '';
-  }
-
-  function agregarHistorial(texto) {
-    const hist = document.getElementById('historial');
-    const vacio = hist.querySelector('.vacio');
-    if (vacio) vacio.remove();
-    const div = document.createElement('div');
-    div.className = 'registro';
-    const hora = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    div.innerHTML = `<div class="hora">${hora}</div><div class="valor">${texto}</div>`;
-    hist.insertBefore(div, hist.firstChild);
-  }
-</script>
-</body>
-</html>
+      setEstado('No se pudo acceder a la cámara
