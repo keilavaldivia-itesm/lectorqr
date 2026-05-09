@@ -68,4 +68,129 @@
     #estado.leyendo { color: #1a73e8; }
     #historial { width: 100%; max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
     .registro { background: #f0f7ff; border-left: 4px solid #1a73e8; border-radius: 8px; padding: 8px 12px; }
-    .registro .hora
+    .registro .hora { font-size: 11px; color: #888; margin-bottom: 2px; }
+    .registro .valor { font-size: 14px; font-weight: bold; color: #1a1a1a; word-break: break-all; }
+    .vacio { font-size: 13px; color: #bbb; text-align: center; width: 100%; padding: 10px 0; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h1>📋 Escáner QR → Google Sheets</h1>
+  <div id="visor">
+    <div id="reader"></div>
+    <div class="marco">
+      <div class="esquina tl"></div>
+      <div class="esquina tr"></div>
+      <div class="esquina bl"></div>
+      <div class="esquina br"></div>
+    </div>
+  </div>
+  <button id="btn" onclick="toggleScanner()">📷 Escanear código QR</button>
+  <div id="estado">Presiona el botón para comenzar</div>
+  <div id="historial">
+    <p class="vacio">Los registros aparecerán aquí</p>
+  </div>
+</div>
+
+<script>
+  const API_URL = 'https://sheetdb.io/api/v1/2v7bzkjganw8j';
+
+  let scanner = null;
+  let escaneando = false;
+  let procesando = false;
+
+  function reproducirSonido() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.3);
+    } catch(e) {}
+  }
+
+  function toggleScanner() {
+    escaneando ? detener() : iniciar();
+  }
+
+  function iniciar() {
+    document.getElementById('visor').classList.add('activo');
+    document.getElementById('btn').textContent = '⏹ Detener escáner';
+    document.getElementById('btn').classList.add('detener');
+    setEstado('Apunta la cámara al código QR...', 'leyendo');
+    escaneando = true;
+    scanner = new Html5Qrcode('reader');
+    scanner.start(
+      { facingMode: 'environment' },
+      { fps: 10, qrbox: { width: 220, height: 220 } },
+      onScanExito,
+      () => {}
+    ).catch(err => {
+      setEstado('No se pudo acceder a la cámara: ' + err, 'err');
+      detener();
+    });
+  }
+
+  function detener() {
+    if (scanner) {
+      scanner.stop().then(() => { scanner.clear(); scanner = null; }).catch(() => {});
+    }
+    document.getElementById('visor').classList.remove('activo');
+    document.getElementById('btn').textContent = '📷 Escanear código QR';
+    document.getElementById('btn').classList.remove('detener');
+    escaneando = false;
+    procesando = false;
+  }
+
+  function onScanExito(texto) {
+    if (procesando) return;
+    procesando = true;
+    reproducirSonido();
+    setEstado('Guardando...', 'leyendo');
+
+    const ahora = new Date();
+    const fecha = ahora.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const hora = ahora.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const fechaHora = fecha + ' ' + hora;
+
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data: { codigo: texto, fecha: fechaHora } })
+    })
+    .then(r => r.json())
+    .then(() => {
+      setEstado('✓ Guardado', 'ok');
+      agregarHistorial(texto, fechaHora);
+      setTimeout(() => { procesando = false; }, 2000);
+    })
+    .catch(() => {
+      setEstado('Error al guardar', 'err');
+      procesando = false;
+    });
+  }
+
+  function setEstado(msg, clase) {
+    const el = document.getElementById('estado');
+    el.textContent = msg;
+    el.className = clase || '';
+  }
+
+  function agregarHistorial(texto, fechaHora) {
+    const hist = document.getElementById('historial');
+    const vacio = hist.querySelector('.vacio');
+    if (vacio) vacio.remove();
+    const div = document.createElement('div');
+    div.className = 'registro';
+    div.innerHTML = `<div class="hora">${fechaHora}</div><div class="valor">${texto}</div>`;
+    hist.insertBefore(div, hist.firstChild);
+  }
+</script>
+</body>
+</html>
