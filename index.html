@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Escáner Keila QR</title>
+  <title>Escáner QR</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -101,6 +101,22 @@
   let escaneando = false;
   let procesando = false;
 
+  function reproducirSonido() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.3);
+    } catch(e) {}
+  }
+
   function toggleScanner() {
     escaneando ? detener() : iniciar();
   }
@@ -138,23 +154,27 @@
   function onScanExito(texto) {
     if (procesando) return;
     procesando = true;
+    reproducirSonido();
     setEstado('Guardando...', 'leyendo');
 
-    fetch(API_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ texto: texto })
-    })
-    .then(() => {
-      setEstado('✓ Guardado', 'ok');
-      agregarHistorial(texto, '—');
-      setTimeout(() => { procesando = false; }, 2000);
-    })
-    .catch(() => {
-      setEstado('Error al guardar', 'err');
-      procesando = false;
-    });
+    // Usamos GET con parámetro para evitar el problema de CORS con POST
+    const url = API_URL + '?texto=' + encodeURIComponent(texto);
+
+    fetch(url)
+      .then(r => r.json())
+      .then(res => {
+        if (res.ok) {
+          setEstado('✓ Guardado en fila ' + res.fila, 'ok');
+          agregarHistorial(res.texto, res.fila);
+        } else {
+          setEstado('Error: ' + res.error, 'err');
+        }
+        setTimeout(() => { procesando = false; }, 2000);
+      })
+      .catch(() => {
+        setEstado('Error al guardar', 'err');
+        procesando = false;
+      });
   }
 
   function setEstado(msg, clase) {
@@ -170,7 +190,7 @@
     const div = document.createElement('div');
     div.className = 'registro';
     const hora = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    div.innerHTML = `<div class="hora">${hora}</div><div class="valor">${texto}</div>`;
+    div.innerHTML = `<div class="hora">${hora} — fila ${fila}</div><div class="valor">${texto}</div>`;
     hist.insertBefore(div, hist.firstChild);
   }
 </script>
