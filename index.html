@@ -155,14 +155,16 @@
     setEstado('Guardando...', 'leyendo');
 
     const ahora = new Date();
-    const fecha = ahora.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    const hora = ahora.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    const fechaHora = fecha + ' ' + hora;
+    const fechaHora = ahora.toLocaleDateString('es-MX', {
+      day: '2-digit', month: '2-digit', year: 'numeric'
+    }) + ' ' + ahora.toLocaleTimeString('es-MX', {
+      hour: '2-digit', minute: '2-digit', second: '2-digit'
+    });
 
     fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ data: { codigo: texto, fecha: fechaHora } })
+      body: JSON.stringify({ data: { fecha: fechaHora, codigo: texto } })
     })
     .then(r => r.json())
     .then(() => {
