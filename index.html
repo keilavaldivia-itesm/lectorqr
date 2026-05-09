@@ -3,195 +3,714 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Escáner QR</title>
+  <title>Escáner QR Pro</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --accent: #4f8ef7;
+      --accent2: #7c6af7;
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --text: #e8eaf0;
+      --text2: #8b90a7;
+      --border: #2d3148;
+      --radius: 12px;
+    }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: Arial, sans-serif;
-      background: #f0f4f8;
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
       min-height: 100vh;
+    }
+
+    /* HEADER */
+    .header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 20px;
       display: flex;
       align-items: center;
-      justify-content: center;
-      padding: 20px;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
-    .card {
-      background: white;
-      border-radius: 20px;
-      padding: 28px 20px;
-      width: 100%;
-      max-width: 400px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.10);
+    .header h1 { font-size: 16px; font-weight: 600; letter-spacing: -0.3px; }
+    .header h1 span { color: var(--accent); }
+    .badge-live {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; color: var(--green);
+      background: rgba(52,211,153,0.1);
+      border: 1px solid rgba(52,211,153,0.2);
+      border-radius: 20px; padding: 4px 10px;
+    }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    /* TABS */
+    .tabs {
       display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 18px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 16px;
+      gap: 4px;
     }
-    h1 { font-size: 18px; color: #1a1a1a; text-align: center; }
+    .tab {
+      padding: 12px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text2);
+      border: none;
+      background: none;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .tab:hover { color: var(--text); }
+
+    /* PANELS */
+    .panel { display: none; padding: 16px; max-width: 600px; margin: 0 auto; }
+    .panel.active { display: block; }
+
+    /* SCANNER */
+    .scanner-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
     #visor {
       width: 100%;
       aspect-ratio: 1;
-      border-radius: 14px;
-      overflow: hidden;
-      background: #111;
+      background: #000;
       display: none;
       position: relative;
     }
     #visor.activo { display: block; }
     #reader { width: 100%; height: 100%; }
-    .marco { position: absolute; inset: 0; pointer-events: none; }
-    .esquina { position: absolute; width: 28px; height: 28px; border-color: #1a73e8; border-style: solid; }
-    .esquina.tl { top: 14px; left: 14px; border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
-    .esquina.tr { top: 14px; right: 14px; border-width: 3px 3px 0 0; border-radius: 0 4px 0 0; }
-    .esquina.bl { bottom: 14px; left: 14px; border-width: 0 0 3px 3px; border-radius: 0 0 0 4px; }
-    .esquina.br { bottom: 14px; right: 14px; border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
-    #btn {
-      width: 100%;
-      padding: 16px;
-      font-size: 16px;
-      font-weight: bold;
-      border: none;
-      border-radius: 12px;
-      cursor: pointer;
-      background: #1a73e8;
-      color: white;
-      transition: background 0.2s, transform 0.1s;
+    .scan-overlay {
+      position: absolute; inset: 0; pointer-events: none;
+      display: flex; align-items: center; justify-content: center;
     }
-    #btn:active { transform: scale(0.98); }
-    #btn:hover { background: #1557b0; }
-    #btn.detener { background: #e8453c; }
-    #btn.detener:hover { background: #c5221f; }
-    #estado { font-size: 14px; text-align: center; color: #666; min-height: 20px; padding: 0 8px; }
-    #estado.ok { color: #188038; font-weight: bold; }
-    #estado.err { color: #c5221f; }
-    #estado.leyendo { color: #1a73e8; }
-    #historial { width: 100%; max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
-    .registro { background: #f0f7ff; border-left: 4px solid #1a73e8; border-radius: 8px; padding: 8px 12px; }
-    .registro .hora { font-size: 11px; color: #888; margin-bottom: 2px; }
-    .registro .valor { font-size: 14px; font-weight: bold; color: #1a1a1a; word-break: break-all; }
-    .vacio { font-size: 13px; color: #bbb; text-align: center; width: 100%; padding: 10px 0; }
+    .scan-box {
+      width: 200px; height: 200px;
+      border: 2px solid var(--accent);
+      border-radius: 8px;
+      position: relative;
+      box-shadow: 0 0 0 9999px rgba(0,0,0,0.4);
+    }
+    .scan-line {
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 2px; background: var(--accent);
+      animation: scanline 2s linear infinite;
+      box-shadow: 0 0 8px var(--accent);
+    }
+    @keyframes scanline { 0%{top:0} 100%{top:100%} }
+    .corner { position: absolute; width: 20px; height: 20px; border-color: var(--accent2); border-style: solid; }
+    .corner.tl { top: -2px; left: -2px; border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
+    .corner.tr { top: -2px; right: -2px; border-width: 3px 3px 0 0; border-radius: 0 4px 0 0; }
+    .corner.bl { bottom: -2px; left: -2px; border-width: 0 0 3px 3px; border-radius: 0 0 0 4px; }
+    .corner.br { bottom: -2px; right: -2px; border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
+
+    .scanner-idle {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 40px 20px; gap: 12px; color: var(--text2);
+    }
+    .scanner-idle svg { opacity: 0.3; }
+    .scanner-idle p { font-size: 14px; }
+
+    /* BUTTONS */
+    .btn {
+      width: 100%; padding: 14px; font-size: 15px; font-weight: 600;
+      border: none; border-radius: var(--radius); cursor: pointer;
+      font-family: inherit; transition: all 0.15s; letter-spacing: -0.2px;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: #3a7bf0; }
+    .btn-danger { background: var(--red); color: #fff; }
+    .btn-danger:hover { background: #ef4444; }
+    .btn-sm {
+      padding: 7px 14px; font-size: 13px; border-radius: 8px;
+      border: 1px solid var(--border); background: var(--surface2);
+      color: var(--text); cursor: pointer; font-family: inherit;
+    }
+    .btn-sm:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* STATUS */
+    #estado {
+      text-align: center; font-size: 13px; padding: 8px;
+      min-height: 36px; display: flex; align-items: center; justify-content: center;
+      border-radius: 8px; margin: 10px 0;
+    }
+    #estado.ok { background: rgba(52,211,153,0.1); color: var(--green); }
+    #estado.err { background: rgba(248,113,113,0.1); color: var(--red); }
+    #estado.leyendo { background: rgba(79,142,247,0.1); color: var(--accent); }
+    #estado.idle { color: var(--text2); }
+
+    /* MANUAL INPUT */
+    .manual-row { display: flex; gap: 8px; margin-bottom: 14px; }
+    .manual-row input {
+      flex: 1; padding: 10px 14px; font-size: 14px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); font-family: 'DM Mono', monospace;
+    }
+    .manual-row input:focus { outline: none; border-color: var(--accent); }
+    .manual-row input::placeholder { color: var(--text2); }
+
+    /* TAGS */
+    .tags-section { margin-bottom: 14px; }
+    .tags-section label { font-size: 12px; color: var(--text2); margin-bottom: 6px; display: block; }
+    .tags-row { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tag-chip {
+      padding: 5px 12px; border-radius: 20px; font-size: 12px; cursor: pointer;
+      border: 1px solid var(--border); background: var(--surface2); color: var(--text2);
+      transition: all 0.15s;
+    }
+    .tag-chip.selected { background: rgba(79,142,247,0.15); border-color: var(--accent); color: var(--accent); }
+
+    /* HISTORIAL */
+    .historial-wrap { margin-top: 14px; }
+    .historial-label { font-size: 12px; color: var(--text2); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+    .historial { display: flex; flex-direction: column; gap: 6px; max-height: 240px; overflow-y: auto; }
+    .registro {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 12px;
+      display: flex; justify-content: space-between; align-items: center;
+      animation: slideIn 0.2s ease;
+    }
+    @keyframes slideIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:none} }
+    .registro-left .codigo { font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500; }
+    .registro-left .meta { font-size: 11px; color: var(--text2); margin-top: 2px; }
+    .registro-right { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+    .tag-badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: rgba(124,106,247,0.15); color: var(--accent2); border: 1px solid rgba(124,106,247,0.2); }
+    .geo-badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: rgba(52,211,153,0.1); color: var(--green); border: 1px solid rgba(52,211,153,0.2); }
+
+    /* SETTINGS */
+    .section-title { font-size: 13px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; margin-top: 20px; }
+    .section-title:first-child { margin-top: 0; }
+    .card-setting {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px; margin-bottom: 10px;
+    }
+    .setting-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .setting-row:last-child { margin-bottom: 0; }
+    .setting-label { font-size: 14px; }
+    .setting-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+    .toggle { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; inset: 0; background: var(--surface2);
+      border: 1px solid var(--border); border-radius: 20px; cursor: pointer; transition: 0.2s;
+    }
+    .toggle-slider:before {
+      content: ''; position: absolute; width: 16px; height: 16px;
+      left: 2px; top: 2px; background: var(--text2); border-radius: 50%; transition: 0.2s;
+    }
+    .toggle input:checked + .toggle-slider { background: var(--accent); border-color: var(--accent); }
+    .toggle input:checked + .toggle-slider:before { transform: translateX(18px); background: #fff; }
+
+    /* COLUMNS BUILDER */
+    .columns-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+    .col-row {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 8px 10px;
+    }
+    .col-row .drag-handle { cursor: grab; color: var(--text2); font-size: 16px; user-select: none; }
+    .col-row input {
+      flex: 1; background: none; border: none; color: var(--text);
+      font-size: 13px; font-family: 'DM Mono', monospace;
+    }
+    .col-row input:focus { outline: none; }
+    .col-type {
+      font-size: 11px; padding: 3px 8px; border-radius: 6px;
+      background: var(--surface); border: 1px solid var(--border); color: var(--text2);
+    }
+    .col-del { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 16px; padding: 0 4px; }
+    .col-del:hover { color: var(--red); }
+    .add-col-row { display: flex; gap: 8px; }
+    .add-col-row input, .add-col-row select {
+      flex: 1; padding: 8px 12px; font-size: 13px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); font-family: inherit;
+    }
+
+    /* TAGS SETTINGS */
+    .tags-input-row { display: flex; gap: 8px; }
+    .tags-input-row input {
+      flex: 1; padding: 8px 12px; font-size: 13px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); font-family: inherit;
+    }
+    .tags-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .tag-item {
+      display: flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 20px; font-size: 12px;
+      background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+    }
+    .tag-item button { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 14px; line-height: 1; }
+    .tag-item button:hover { color: var(--red); }
+
+    /* COUNTER ROW */
+    .counter-row { display: flex; gap: 8px; margin-bottom: 14px; }
+    .counter-box {
+      flex: 1; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px; text-align: center;
+    }
+    .counter-val { font-size: 22px; font-weight: 600; font-family: 'DM Mono', monospace; color: var(--accent); }
+    .counter-lbl { font-size: 11px; color: var(--text2); margin-top: 2px; }
+
+    /* GEO TOGGLE */
+    .geo-row {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; font-size: 13px;
+    }
+    .geo-row span { flex: 1; }
+    .geo-status { font-size: 11px; }
+    .geo-status.on { color: var(--green); }
+    .geo-status.off { color: var(--text2); }
+
+    /* SCROLLBAR */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
   </style>
 </head>
 <body>
-<div class="card">
-  <h1>📋 Escáner QR → Google Sheets</h1>
-  <div id="visor">
-    <div id="reader"></div>
-    <div class="marco">
-      <div class="esquina tl"></div>
-      <div class="esquina tr"></div>
-      <div class="esquina bl"></div>
-      <div class="esquina br"></div>
+
+<div class="header">
+  <h1>QR <span>Pro</span> Scanner</h1>
+  <div class="badge-live"><div class="dot"></div> En vivo</div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('escanear', this)">📷 Escanear</button>
+  <button class="tab" onclick="showTab('ajustes', this)">⚙️ Ajustes</button>
+</div>
+
+<!-- PANEL ESCANEAR -->
+<div id="tab-escanear" class="panel active">
+
+  <div class="counter-row">
+    <div class="counter-box"><div class="counter-val" id="cnt-total">0</div><div class="counter-lbl">Total</div></div>
+    <div class="counter-box"><div class="counter-val" id="cnt-sesion">0</div><div class="counter-lbl">Esta sesión</div></div>
+  </div>
+
+  <div class="scanner-wrap">
+    <div id="visor">
+      <div id="reader"></div>
+      <div class="scan-overlay">
+        <div class="scan-box">
+          <div class="scan-line"></div>
+          <div class="corner tl"></div><div class="corner tr"></div>
+          <div class="corner bl"></div><div class="corner br"></div>
+        </div>
+      </div>
+    </div>
+    <div id="scanner-idle" class="scanner-idle">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/>
+        <rect x="7" y="7" width="3" height="3"/><rect x="14" y="7" width="3" height="3"/>
+        <rect x="7" y="14" width="3" height="3"/><path d="M14 14h3v3"/>
+      </svg>
+      <p>Presiona el botón para activar la cámara</p>
     </div>
   </div>
-  <button id="btn" onclick="toggleScanner()">📷 Escanear código QR</button>
-  <div id="estado">Presiona el botón para comenzar</div>
-  <div id="historial">
-    <p class="vacio">Los registros aparecerán aquí</p>
+
+  <button id="btn-scan" class="btn btn-primary" onclick="toggleScanner()">📷 Iniciar escáner</button>
+
+  <div id="estado" class="idle">Listo para escanear</div>
+
+  <!-- GEO -->
+  <div class="geo-row">
+    <span>📍 Geolocalización</span>
+    <span class="geo-status off" id="geo-status">Desactivada</span>
+    <label class="toggle"><input type="checkbox" id="geo-toggle" onchange="toggleGeo()"><span class="toggle-slider"></span></label>
+  </div>
+
+  <!-- TAGS -->
+  <div class="tags-section" id="tags-section" style="display:none">
+    <label>Etiqueta del escaneo</label>
+    <div class="tags-row" id="tags-chips"></div>
+  </div>
+
+  <!-- MANUAL -->
+  <div class="manual-row">
+    <input type="text" id="manual-input" placeholder="Ingresar código manualmente..." />
+    <button class="btn-sm" onclick="submitManual()">Enviar</button>
+  </div>
+
+  <div class="historial-wrap">
+    <div class="historial-label">
+      <span>Últimos registros</span>
+      <button class="btn-sm" onclick="limpiarHistorial()">Limpiar</button>
+    </div>
+    <div class="historial" id="historial">
+      <p style="font-size:13px;color:var(--text2);text-align:center;padding:16px">Los escaneos aparecerán aquí</p>
+    </div>
   </div>
 </div>
 
-<script>
-  const API_URL = 'https://sheetdb.io/api/v1/2v7bzkjganw8j';
+<!-- PANEL AJUSTES -->
+<div id="tab-ajustes" class="panel">
 
+  <p class="section-title">Columnas de datos</p>
+  <div class="card-setting">
+    <div class="columns-list" id="columns-list"></div>
+    <div class="add-col-row">
+      <input type="text" id="new-col-name" placeholder="Nombre columna..." />
+      <select id="new-col-type">
+        <option value="texto">Texto</option>
+        <option value="numero">Número</option>
+        <option value="fecha">Fecha/Hora</option>
+        <option value="geo">Geoloc.</option>
+        <option value="tag">Etiqueta</option>
+      </select>
+      <button class="btn-sm" onclick="agregarColumna()">+ Agregar</button>
+    </div>
+  </div>
+
+  <p class="section-title">Etiquetas predefinidas</p>
+  <div class="card-setting">
+    <div class="tags-input-row">
+      <input type="text" id="new-tag-input" placeholder="Nueva etiqueta..." />
+      <button class="btn-sm" onclick="agregarTag()">+ Agregar</button>
+    </div>
+    <div class="tags-list" id="tags-settings-list"></div>
+  </div>
+
+  <p class="section-title">Opciones de escaneo</p>
+  <div class="card-setting">
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">Escaneo continuo</div>
+        <div class="setting-sub">No pausar entre escaneos</div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="opt-continuo" checked><span class="toggle-slider"></span></label>
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">Sonido al escanear</div>
+        <div class="setting-sub">Bip de confirmación</div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="opt-sonido" checked><span class="toggle-slider"></span></label>
+    </div>
+  </div>
+
+  <p class="section-title">API SheetDB</p>
+  <div class="card-setting">
+    <div class="setting-row">
+      <div style="flex:1">
+        <div class="setting-label">URL de la API</div>
+        <input type="text" id="api-url-input" style="width:100%;margin-top:6px;padding:8px 10px;font-size:12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Mono',monospace" />
+      </div>
+    </div>
+    <button class="btn-sm" style="width:100%;margin-top:8px" onclick="guardarAPI()">Guardar URL</button>
+  </div>
+
+</div>
+
+<script>
+  // ── STATE ──
+  let API_URL = localStorage.getItem('api_url') || 'https://sheetdb.io/api/v1/2v7bzkjganw8j';
   let scanner = null;
   let escaneando = false;
   let procesando = false;
+  let cntTotal = parseInt(localStorage.getItem('cnt_total') || '0');
+  let cntSesion = 0;
+  let geoActiva = false;
+  let geoData = null;
+  let tagSeleccionado = '';
+  let tags = JSON.parse(localStorage.getItem('tags') || '["Entrada","Salida","Revisión","Urgente"]');
+  let columnas = JSON.parse(localStorage.getItem('columnas') || JSON.stringify([
+    { nombre: 'fecha', tipo: 'fecha' },
+    { nombre: 'codigo', tipo: 'texto' }
+  ]));
 
-  function reproducirSonido() {
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(880, ctx.currentTime);
-      gain.gain.setValueAtTime(0.3, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + 0.3);
-    } catch(e) {}
+  // ── INIT ──
+  document.getElementById('api-url-input').value = API_URL;
+  actualizarContadores();
+  renderColumnas();
+  renderTagsChips();
+  renderTagsSettings();
+  checkTagsSection();
+
+  // ── TABS ──
+  function showTab(name, el) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    el.classList.add('active');
   }
 
+  // ── SCANNER ──
   function toggleScanner() {
     escaneando ? detener() : iniciar();
   }
 
   function iniciar() {
     document.getElementById('visor').classList.add('activo');
-    document.getElementById('btn').textContent = '⏹ Detener escáner';
-    document.getElementById('btn').classList.add('detener');
-    setEstado('Apunta la cámara al código QR...', 'leyendo');
+    document.getElementById('scanner-idle').style.display = 'none';
+    document.getElementById('btn-scan').textContent = '⏹ Detener escáner';
+    document.getElementById('btn-scan').classList.replace('btn-primary', 'btn-danger');
+    setEstado('Apunta al código QR...', 'leyendo');
     escaneando = true;
     scanner = new Html5Qrcode('reader');
     scanner.start(
       { facingMode: 'environment' },
-      { fps: 10, qrbox: { width: 220, height: 220 } },
+      { fps: 10, qrbox: { width: 200, height: 200 } },
       onScanExito,
       () => {}
     ).catch(err => {
-      setEstado('No se pudo acceder a la cámara: ' + err, 'err');
+      setEstado('No se pudo acceder a la cámara', 'err');
       detener();
     });
   }
 
   function detener() {
-    if (scanner) {
-      scanner.stop().then(() => { scanner.clear(); scanner = null; }).catch(() => {});
-    }
+    if (scanner) scanner.stop().then(() => { scanner.clear(); scanner = null; }).catch(() => {});
     document.getElementById('visor').classList.remove('activo');
-    document.getElementById('btn').textContent = '📷 Escanear código QR';
-    document.getElementById('btn').classList.remove('detener');
+    document.getElementById('scanner-idle').style.display = 'flex';
+    document.getElementById('btn-scan').textContent = '📷 Iniciar escáner';
+    document.getElementById('btn-scan').classList.replace('btn-danger', 'btn-primary');
     escaneando = false;
     procesando = false;
+    setEstado('Listo para escanear', 'idle');
   }
 
   function onScanExito(texto) {
     if (procesando) return;
     procesando = true;
-    reproducirSonido();
+    if (document.getElementById('opt-sonido').checked) reproducirSonido();
+    enviar(texto);
+    if (document.getElementById('opt-continuo').checked) {
+      setTimeout(() => { procesando = false; }, 2500);
+    }
+  }
+
+  function submitManual() {
+    const val = document.getElementById('manual-input').value.trim();
+    if (!val) return;
+    document.getElementById('manual-input').value = '';
+    if (document.getElementById('opt-sonido').checked) reproducirSonido();
+    enviar(val);
+  }
+
+  document.getElementById('manual-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') submitManual();
+  });
+
+  // ── ENVIAR ──
+  async function enviar(texto) {
     setEstado('Guardando...', 'leyendo');
-
     const ahora = new Date();
-    const fechaHora = ahora.toLocaleDateString('es-MX', {
-      day: '2-digit', month: '2-digit', year: 'numeric'
-    }) + ' ' + ahora.toLocaleTimeString('es-MX', {
-      hour: '2-digit', minute: '2-digit', second: '2-digit'
-    });
+    const fechaHora = ahora.toLocaleDateString('es-MX', { day:'2-digit', month:'2-digit', year:'numeric' })
+      + ' ' + ahora.toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
 
-    fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ data: { fecha: fechaHora, codigo: texto } })
-    })
-    .then(r => r.json())
-    .then(() => {
-      setEstado('✓ Guardado', 'ok');
+    // Build data object from columns
+    const data = {};
+    for (const col of columnas) {
+      if (col.tipo === 'fecha') data[col.nombre] = fechaHora;
+      else if (col.tipo === 'texto' || col.tipo === 'numero') data[col.nombre] = texto;
+      else if (col.tipo === 'tag') data[col.nombre] = tagSeleccionado;
+      else if (col.tipo === 'geo') {
+        data[col.nombre] = geoData ? geoData.lat + ',' + geoData.lng : '';
+      }
+    }
+
+    try {
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data })
+      });
+      cntTotal++;
+      cntSesion++;
+      localStorage.setItem('cnt_total', cntTotal);
+      actualizarContadores();
+      setEstado('✓ Guardado — ' + texto.substring(0, 30), 'ok');
       agregarHistorial(texto, fechaHora);
-      setTimeout(() => { procesando = false; }, 2000);
-    })
-    .catch(() => {
+    } catch {
       setEstado('Error al guardar', 'err');
       procesando = false;
-    });
+    }
   }
 
-  function setEstado(msg, clase) {
-    const el = document.getElementById('estado');
-    el.textContent = msg;
-    el.className = clase || '';
+  // ── GEO ──
+  function toggleGeo() {
+    const on = document.getElementById('geo-toggle').checked;
+    const status = document.getElementById('geo-status');
+    if (on) {
+      navigator.geolocation.getCurrentPosition(pos => {
+        geoActiva = true;
+        geoData = { lat: pos.coords.latitude.toFixed(6), lng: pos.coords.longitude.toFixed(6) };
+        status.textContent = geoData.lat + ', ' + geoData.lng;
+        status.className = 'geo-status on';
+      }, () => {
+        document.getElementById('geo-toggle').checked = false;
+        status.textContent = 'Sin permiso';
+        status.className = 'geo-status off';
+      });
+    } else {
+      geoActiva = false;
+      geoData = null;
+      status.textContent = 'Desactivada';
+      status.className = 'geo-status off';
+    }
   }
 
+  // ── HISTORIAL ──
   function agregarHistorial(texto, fechaHora) {
     const hist = document.getElementById('historial');
-    const vacio = hist.querySelector('.vacio');
+    const vacio = hist.querySelector('p');
     if (vacio) vacio.remove();
     const div = document.createElement('div');
     div.className = 'registro';
-    div.innerHTML = `<div class="hora">${fechaHora}</div><div class="valor">${texto}</div>`;
+    div.innerHTML = `
+      <div class="registro-left">
+        <div class="codigo">${texto}</div>
+        <div class="meta">${fechaHora}</div>
+      </div>
+      <div class="registro-right">
+        ${tagSeleccionado ? '<span class="tag-badge">' + tagSeleccionado + '</span>' : ''}
+        ${geoData ? '<span class="geo-badge">📍</span>' : ''}
+      </div>`;
     hist.insertBefore(div, hist.firstChild);
+  }
+
+  function limpiarHistorial() {
+    document.getElementById('historial').innerHTML = '<p style="font-size:13px;color:var(--text2);text-align:center;padding:16px">Los escaneos aparecerán aquí</p>';
+  }
+
+  // ── TAGS ──
+  function renderTagsChips() {
+    const wrap = document.getElementById('tags-chips');
+    wrap.innerHTML = '';
+    tags.forEach(tag => {
+      const chip = document.createElement('div');
+      chip.className = 'tag-chip' + (tagSeleccionado === tag ? ' selected' : '');
+      chip.textContent = tag;
+      chip.onclick = () => {
+        tagSeleccionado = tagSeleccionado === tag ? '' : tag;
+        renderTagsChips();
+      };
+      wrap.appendChild(chip);
+    });
+  }
+
+  function renderTagsSettings() {
+    const list = document.getElementById('tags-settings-list');
+    list.innerHTML = '';
+    tags.forEach((tag, i) => {
+      const item = document.createElement('div');
+      item.className = 'tag-item';
+      item.innerHTML = `${tag}<button onclick="eliminarTag(${i})">×</button>`;
+      list.appendChild(item);
+    });
+  }
+
+  function agregarTag() {
+    const val = document.getElementById('new-tag-input').value.trim();
+    if (!val) return;
+    tags.push(val);
+    localStorage.setItem('tags', JSON.stringify(tags));
+    document.getElementById('new-tag-input').value = '';
+    renderTagsChips();
+    renderTagsSettings();
+  }
+
+  function eliminarTag(i) {
+    tags.splice(i, 1);
+    localStorage.setItem('tags', JSON.stringify(tags));
+    renderTagsChips();
+    renderTagsSettings();
+  }
+
+  function checkTagsSection() {
+    const hasTagCol = columnas.some(c => c.tipo === 'tag');
+    document.getElementById('tags-section').style.display = hasTagCol ? 'block' : 'none';
+  }
+
+  // ── COLUMNAS ──
+  function renderColumnas() {
+    const list = document.getElementById('columns-list');
+    list.innerHTML = '';
+    columnas.forEach((col, i) => {
+      const row = document.createElement('div');
+      row.className = 'col-row';
+      row.draggable = true;
+      row.dataset.index = i;
+      row.innerHTML = `
+        <span class="drag-handle">⠿</span>
+        <input value="${col.nombre}" onchange="columnas[${i}].nombre=this.value;guardarColumnas()" />
+        <span class="col-type">${col.tipo}</span>
+        <button class="col-del" onclick="eliminarColumna(${i})">×</button>`;
+      list.appendChild(row);
+    });
+  }
+
+  function agregarColumna() {
+    const nombre = document.getElementById('new-col-name').value.trim();
+    const tipo = document.getElementById('new-col-type').value;
+    if (!nombre) return;
+    columnas.push({ nombre, tipo });
+    document.getElementById('new-col-name').value = '';
+    guardarColumnas();
+    checkTagsSection();
+  }
+
+  function eliminarColumna(i) {
+    columnas.splice(i, 1);
+    guardarColumnas();
+    checkTagsSection();
+  }
+
+  function guardarColumnas() {
+    localStorage.setItem('columnas', JSON.stringify(columnas));
+    renderColumnas();
+  }
+
+  // ── API ──
+  function guardarAPI() {
+    API_URL = document.getElementById('api-url-input').value.trim();
+    localStorage.setItem('api_url', API_URL);
+    setEstado('URL guardada', 'ok');
+    setTimeout(() => setEstado('Listo para escanear', 'idle'), 2000);
+  }
+
+  // ── UTILS ──
+  function setEstado(msg, clase) {
+    const el = document.getElementById('estado');
+    el.textContent = msg;
+    el.className = clase;
+  }
+
+  function actualizarContadores() {
+    document.getElementById('cnt-total').textContent = cntTotal;
+    document.getElementById('cnt-sesion').textContent = cntSesion;
+  }
+
+  function reproducirSonido() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+      osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.25);
+    } catch(e) {}
   }
 </script>
 </body>
