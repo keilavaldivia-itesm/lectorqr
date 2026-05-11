@@ -468,32 +468,31 @@
     document.getElementById('btn-scan').classList.replace('btn-primary', 'btn-danger');
     setEstado('Apunta al código QR...', 'leyendo');
     escaneando = true;
-    scanner = new Html5Qrcode('reader');
+
+    const config = {
+      fps: 10,
+      qrbox: { width: 250, height: 150 },
+      rememberLastUsedCamera: true,
+      supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
+    };
+
+    scanner = new Html5Qrcode('reader', { verbose: false });
     scanner.start(
       { facingMode: 'environment' },
-      {
-        fps: 10,
-        qrbox: { width: 250, height: 150 },
-        formatsToSupport: [
-          Html5QrcodeSupportedFormats.QR_CODE,
-          Html5QrcodeSupportedFormats.EAN_13,
-          Html5QrcodeSupportedFormats.EAN_8,
-          Html5QrcodeSupportedFormats.UPC_A,
-          Html5QrcodeSupportedFormats.UPC_E,
-          Html5QrcodeSupportedFormats.CODE_128,
-          Html5QrcodeSupportedFormats.CODE_39,
-          Html5QrcodeSupportedFormats.CODE_93,
-          Html5QrcodeSupportedFormats.ITF,
-          Html5QrcodeSupportedFormats.DATA_MATRIX,
-          Html5QrcodeSupportedFormats.AZTEC,
-          Html5QrcodeSupportedFormats.PDF_417,
-        ]
-      },
+      config,
       onScanExito,
       () => {}
     ).catch(err => {
-      setEstado('No se pudo acceder a la cámara', 'err');
-      detener();
+      // Fallback: try without facingMode constraint
+      scanner.start(
+        { facingMode: 'user' },
+        config,
+        onScanExito,
+        () => {}
+      ).catch(err2 => {
+        setEstado('Error de cámara: ' + (err2.message || err2), 'err');
+        detener();
+      });
     });
   }
 
