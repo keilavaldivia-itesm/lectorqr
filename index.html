@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Escáner Keila</title>
-  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -15,274 +15,126 @@
       --accent2: #7c6af7;
       --green: #34d399;
       --red: #f87171;
-      --yellow: #fbbf24;
       --text: #e8eaf0;
       --text2: #8b90a7;
       --border: #2d3148;
       --radius: 12px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'DM Sans', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-    }
+    body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
-    /* HEADER */
-    .header-sub { font-size: 11px; color: var(--text2); margin-top: 2px; letter-spacing: 0.2px; }
     .header {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 14px 20px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: sticky;
-      top: 0;
-      z-index: 100;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 14px 20px; display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
     }
-    .header h1 { font-size: 16px; font-weight: 600; letter-spacing: -0.3px; }
+    .header h1 { font-size: 16px; font-weight: 600; }
     .header h1 span { color: var(--accent); }
     .badge-live {
-      display: flex; align-items: center; gap: 6px;
-      font-size: 12px; color: var(--green);
-      background: rgba(52,211,153,0.1);
-      border: 1px solid rgba(52,211,153,0.2);
+      display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--green);
+      background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.2);
       border-radius: 20px; padding: 4px 10px;
     }
     .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 1.5s infinite; }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
-    /* TABS */
-    .tabs {
-      display: flex;
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 0 16px;
-      gap: 4px;
-    }
-    .tab {
-      padding: 12px 16px;
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--text2);
-      border: none;
-      background: none;
-      cursor: pointer;
-      border-bottom: 2px solid transparent;
-      transition: all 0.2s;
-    }
+    .tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 16px; gap: 4px; }
+    .tab { padding: 12px 16px; font-size: 13px; font-weight: 500; color: var(--text2); border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; font-family: inherit; }
     .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-    .tab:hover { color: var(--text); }
 
-    /* PANELS */
     .panel { display: none; padding: 16px; max-width: 600px; margin: 0 auto; }
     .panel.active { display: block; }
 
-    /* SCANNER */
-    .scanner-wrap {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-      margin-bottom: 14px;
-    }
-    #visor {
-      width: 100%;
-      aspect-ratio: 1;
-      background: #000;
-      display: none;
-      position: relative;
-    }
+    .counter-row { display: flex; gap: 8px; margin-bottom: 14px; }
+    .counter-box { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px; text-align: center; }
+    .counter-val { font-size: 22px; font-weight: 600; font-family: 'DM Mono', monospace; color: var(--accent); }
+    .counter-lbl { font-size: 11px; color: var(--text2); margin-top: 2px; }
+
+    .scanner-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 14px; }
+    #visor { width: 100%; aspect-ratio: 1; background: #000; display: none; position: relative; }
     #visor.activo { display: block; }
     #reader { width: 100%; height: 100%; }
-    .scan-overlay {
-      position: absolute; inset: 0; pointer-events: none;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .scan-box {
-      width: 200px; height: 200px;
-      border: 2px solid var(--accent);
-      border-radius: 8px;
-      position: relative;
-      box-shadow: 0 0 0 9999px rgba(0,0,0,0.4);
-    }
-    .scan-line {
-      position: absolute; top: 0; left: 0; right: 0;
-      height: 2px; background: var(--accent);
-      animation: scanline 2s linear infinite;
-      box-shadow: 0 0 8px var(--accent);
-    }
+    .scan-overlay { position: absolute; inset: 0; pointer-events: none; display: flex; align-items: center; justify-content: center; }
+    .scan-box { width: 200px; height: 200px; border: 2px solid var(--accent); border-radius: 8px; position: relative; box-shadow: 0 0 0 9999px rgba(0,0,0,0.4); }
+    .scan-line { position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--accent); animation: scanline 2s linear infinite; box-shadow: 0 0 8px var(--accent); }
     @keyframes scanline { 0%{top:0} 100%{top:100%} }
     .corner { position: absolute; width: 20px; height: 20px; border-color: var(--accent2); border-style: solid; }
-    .corner.tl { top: -2px; left: -2px; border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
-    .corner.tr { top: -2px; right: -2px; border-width: 3px 3px 0 0; border-radius: 0 4px 0 0; }
-    .corner.bl { bottom: -2px; left: -2px; border-width: 0 0 3px 3px; border-radius: 0 0 0 4px; }
-    .corner.br { bottom: -2px; right: -2px; border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
+    .corner.tl { top:-2px; left:-2px; border-width:3px 0 0 3px; border-radius:4px 0 0 0; }
+    .corner.tr { top:-2px; right:-2px; border-width:3px 3px 0 0; border-radius:0 4px 0 0; }
+    .corner.bl { bottom:-2px; left:-2px; border-width:0 0 3px 3px; border-radius:0 0 0 4px; }
+    .corner.br { bottom:-2px; right:-2px; border-width:0 3px 3px 0; border-radius:0 0 4px 0; }
 
-    .scanner-idle {
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      padding: 40px 20px; gap: 12px; color: var(--text2);
-    }
+    .scanner-idle { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; gap: 12px; color: var(--text2); }
     .scanner-idle svg { opacity: 0.3; }
     .scanner-idle p { font-size: 14px; }
 
-    /* BUTTONS */
-    .btn {
-      width: 100%; padding: 14px; font-size: 15px; font-weight: 600;
-      border: none; border-radius: var(--radius); cursor: pointer;
-      font-family: inherit; transition: all 0.15s; letter-spacing: -0.2px;
-    }
+    .btn { width: 100%; padding: 14px; font-size: 15px; font-weight: 600; border: none; border-radius: var(--radius); cursor: pointer; font-family: inherit; transition: all 0.15s; }
     .btn-primary { background: var(--accent); color: #fff; }
     .btn-primary:hover { background: #3a7bf0; }
     .btn-danger { background: var(--red); color: #fff; }
-    .btn-danger:hover { background: #ef4444; }
-    .btn-sm {
-      padding: 7px 14px; font-size: 13px; border-radius: 8px;
-      border: 1px solid var(--border); background: var(--surface2);
-      color: var(--text); cursor: pointer; font-family: inherit;
-    }
+    .btn-sm { padding: 7px 14px; font-size: 13px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface2); color: var(--text); cursor: pointer; font-family: inherit; }
     .btn-sm:hover { border-color: var(--accent); color: var(--accent); }
 
-    /* STATUS */
-    #estado {
-      text-align: center; font-size: 13px; padding: 8px;
-      min-height: 36px; display: flex; align-items: center; justify-content: center;
-      border-radius: 8px; margin: 10px 0;
-    }
+    #estado { text-align: center; font-size: 13px; padding: 8px; min-height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 8px; margin: 10px 0; color: var(--text2); }
     #estado.ok { background: rgba(52,211,153,0.1); color: var(--green); }
     #estado.err { background: rgba(248,113,113,0.1); color: var(--red); }
     #estado.leyendo { background: rgba(79,142,247,0.1); color: var(--accent); }
-    #estado.idle { color: var(--text2); }
 
-    /* MANUAL INPUT */
-    .manual-row { display: flex; gap: 8px; margin-bottom: 14px; }
-    .manual-row input {
-      flex: 1; padding: 10px 14px; font-size: 14px;
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 8px; color: var(--text); font-family: 'DM Mono', monospace;
-    }
-    .manual-row input:focus { outline: none; border-color: var(--accent); }
-    .manual-row input::placeholder { color: var(--text2); }
+    .geo-row { display: flex; align-items: center; gap: 8px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; font-size: 13px; }
+    .geo-row span:first-child { flex: 1; }
+    .geo-status { font-size: 11px; color: var(--text2); }
+    .geo-status.on { color: var(--green); }
+    .toggle { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider { position: absolute; inset: 0; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; cursor: pointer; transition: 0.2s; }
+    .toggle-slider:before { content: ''; position: absolute; width: 16px; height: 16px; left: 2px; top: 2px; background: var(--text2); border-radius: 50%; transition: 0.2s; }
+    .toggle input:checked + .toggle-slider { background: var(--accent); border-color: var(--accent); }
+    .toggle input:checked + .toggle-slider:before { transform: translateX(18px); background: #fff; }
 
-    /* TAGS */
     .tags-section { margin-bottom: 14px; }
     .tags-section label { font-size: 12px; color: var(--text2); margin-bottom: 6px; display: block; }
     .tags-row { display: flex; flex-wrap: wrap; gap: 6px; }
-    .tag-chip {
-      padding: 5px 12px; border-radius: 20px; font-size: 12px; cursor: pointer;
-      border: 1px solid var(--border); background: var(--surface2); color: var(--text2);
-      transition: all 0.15s;
-    }
+    .tag-chip { padding: 5px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; border: 1px solid var(--border); background: var(--surface2); color: var(--text2); transition: all 0.15s; }
     .tag-chip.selected { background: rgba(79,142,247,0.15); border-color: var(--accent); color: var(--accent); }
 
-    /* HISTORIAL */
-    .historial-wrap { margin-top: 14px; }
+    .manual-row { display: flex; gap: 8px; margin-bottom: 14px; }
+    .manual-row input { flex: 1; padding: 10px 14px; font-size: 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: 'DM Mono', monospace; }
+    .manual-row input:focus { outline: none; border-color: var(--accent); }
+    .manual-row input::placeholder { color: var(--text2); }
+
     .historial-label { font-size: 12px; color: var(--text2); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
     .historial { display: flex; flex-direction: column; gap: 6px; max-height: 240px; overflow-y: auto; }
-    .registro {
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 8px; padding: 10px 12px;
-      display: flex; justify-content: space-between; align-items: center;
-      animation: slideIn 0.2s ease;
-    }
+    .registro { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; animation: slideIn 0.2s ease; }
     @keyframes slideIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:none} }
     .registro-left .codigo { font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500; }
     .registro-left .meta { font-size: 11px; color: var(--text2); margin-top: 2px; }
-    .registro-right { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
     .tag-badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: rgba(124,106,247,0.15); color: var(--accent2); border: 1px solid rgba(124,106,247,0.2); }
     .geo-badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: rgba(52,211,153,0.1); color: var(--green); border: 1px solid rgba(52,211,153,0.2); }
 
     /* SETTINGS */
     .section-title { font-size: 13px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; margin-top: 20px; }
     .section-title:first-child { margin-top: 0; }
-    .card-setting {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 14px; margin-bottom: 10px;
-    }
+    .card-setting { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; }
     .setting-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
     .setting-row:last-child { margin-bottom: 0; }
     .setting-label { font-size: 14px; }
     .setting-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
-    .toggle { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
-    .toggle input { opacity: 0; width: 0; height: 0; }
-    .toggle-slider {
-      position: absolute; inset: 0; background: var(--surface2);
-      border: 1px solid var(--border); border-radius: 20px; cursor: pointer; transition: 0.2s;
-    }
-    .toggle-slider:before {
-      content: ''; position: absolute; width: 16px; height: 16px;
-      left: 2px; top: 2px; background: var(--text2); border-radius: 50%; transition: 0.2s;
-    }
-    .toggle input:checked + .toggle-slider { background: var(--accent); border-color: var(--accent); }
-    .toggle input:checked + .toggle-slider:before { transform: translateX(18px); background: #fff; }
-
-    /* COLUMNS BUILDER */
     .columns-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
-    .col-row {
-      display: flex; align-items: center; gap: 8px;
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 8px; padding: 8px 10px;
-    }
-    .col-row .drag-handle { cursor: grab; color: var(--text2); font-size: 16px; user-select: none; }
-    .col-row input {
-      flex: 1; background: none; border: none; color: var(--text);
-      font-size: 13px; font-family: 'DM Mono', monospace;
-    }
+    .col-row { display: flex; align-items: center; gap: 8px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; }
+    .col-row input { flex: 1; background: none; border: none; color: var(--text); font-size: 13px; font-family: 'DM Mono', monospace; }
     .col-row input:focus { outline: none; }
-    .col-type {
-      font-size: 11px; padding: 3px 8px; border-radius: 6px;
-      background: var(--surface); border: 1px solid var(--border); color: var(--text2);
-    }
+    .col-type { font-size: 11px; padding: 3px 8px; border-radius: 6px; background: var(--surface); border: 1px solid var(--border); color: var(--text2); }
     .col-del { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 16px; padding: 0 4px; }
     .col-del:hover { color: var(--red); }
     .add-col-row { display: flex; gap: 8px; }
-    .add-col-row input, .add-col-row select {
-      flex: 1; padding: 8px 12px; font-size: 13px;
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 8px; color: var(--text); font-family: inherit;
-    }
-
-    /* TAGS SETTINGS */
+    .add-col-row input, .add-col-row select { flex: 1; padding: 8px 12px; font-size: 13px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: inherit; }
     .tags-input-row { display: flex; gap: 8px; }
-    .tags-input-row input {
-      flex: 1; padding: 8px 12px; font-size: 13px;
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 8px; color: var(--text); font-family: inherit;
-    }
+    .tags-input-row input { flex: 1; padding: 8px 12px; font-size: 13px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: inherit; }
     .tags-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-    .tag-item {
-      display: flex; align-items: center; gap: 6px;
-      padding: 4px 10px; border-radius: 20px; font-size: 12px;
-      background: var(--surface2); border: 1px solid var(--border); color: var(--text);
-    }
+    .tag-item { display: flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 12px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); }
     .tag-item button { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 14px; line-height: 1; }
     .tag-item button:hover { color: var(--red); }
-
-    /* COUNTER ROW */
-    .counter-row { display: flex; gap: 8px; margin-bottom: 14px; }
-    .counter-box {
-      flex: 1; background: var(--surface); border: 1px solid var(--border);
-      border-radius: 8px; padding: 10px; text-align: center;
-    }
-    .counter-val { font-size: 22px; font-weight: 600; font-family: 'DM Mono', monospace; color: var(--accent); }
-    .counter-lbl { font-size: 11px; color: var(--text2); margin-top: 2px; }
-
-    /* GEO TOGGLE */
-    .geo-row {
-      display: flex; align-items: center; gap: 8px;
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; font-size: 13px;
-    }
-    .geo-row span { flex: 1; }
-    .geo-status { font-size: 11px; }
-    .geo-status.on { color: var(--green); }
-    .geo-status.off { color: var(--text2); }
-
-    /* SCROLLBAR */
     ::-webkit-scrollbar { width: 4px; }
-    ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
   </style>
 </head>
@@ -298,9 +150,7 @@
   <button class="tab" onclick="showTab('ajustes', this)">⚙️ Ajustes</button>
 </div>
 
-<!-- PANEL ESCANEAR -->
 <div id="tab-escanear" class="panel active">
-
   <div class="counter-row">
     <div class="counter-box"><div class="counter-val" id="cnt-total">0</div><div class="counter-lbl">Total</div></div>
     <div class="counter-box"><div class="counter-val" id="cnt-sesion">0</div><div class="counter-lbl">Esta sesión</div></div>
@@ -328,29 +178,25 @@
   </div>
 
   <button id="btn-scan" class="btn btn-primary" onclick="toggleScanner()">📷 Iniciar escáner</button>
+  <div id="estado">Listo para escanear</div>
 
-  <div id="estado" class="idle">Listo para escanear</div>
-
-  <!-- GEO -->
   <div class="geo-row">
     <span>📍 Geolocalización</span>
-    <span class="geo-status off" id="geo-status">Desactivada</span>
+    <span class="geo-status" id="geo-status">Desactivada</span>
     <label class="toggle"><input type="checkbox" id="geo-toggle" onchange="toggleGeo()"><span class="toggle-slider"></span></label>
   </div>
 
-  <!-- TAGS -->
   <div class="tags-section" id="tags-section" style="display:none">
     <label>Etiqueta del escaneo</label>
     <div class="tags-row" id="tags-chips"></div>
   </div>
 
-  <!-- MANUAL -->
   <div class="manual-row">
     <input type="text" id="manual-input" placeholder="Ingresar código manualmente..." />
     <button class="btn-sm" onclick="submitManual()">Enviar</button>
   </div>
 
-  <div class="historial-wrap">
+  <div>
     <div class="historial-label">
       <span>Últimos registros</span>
       <div style="display:flex;gap:6px">
@@ -364,9 +210,7 @@
   </div>
 </div>
 
-<!-- PANEL AJUSTES -->
 <div id="tab-ajustes" class="panel">
-
   <p class="section-title">Columnas de datos</p>
   <div class="card-setting">
     <div class="columns-list" id="columns-list"></div>
@@ -395,52 +239,40 @@
   <p class="section-title">Opciones de escaneo</p>
   <div class="card-setting">
     <div class="setting-row">
-      <div>
-        <div class="setting-label">Escaneo continuo</div>
-        <div class="setting-sub">No pausar entre escaneos</div>
-      </div>
+      <div><div class="setting-label">Escaneo continuo</div><div class="setting-sub">No pausar entre escaneos</div></div>
       <label class="toggle"><input type="checkbox" id="opt-continuo" checked><span class="toggle-slider"></span></label>
     </div>
     <div class="setting-row">
-      <div>
-        <div class="setting-label">Sonido al escanear</div>
-        <div class="setting-sub">Bip de confirmación</div>
-      </div>
+      <div><div class="setting-label">Sonido al escanear</div><div class="setting-sub">Bip de confirmación</div></div>
       <label class="toggle"><input type="checkbox" id="opt-sonido" checked><span class="toggle-slider"></span></label>
     </div>
   </div>
 
   <p class="section-title">API SheetDB</p>
   <div class="card-setting">
-    <div class="setting-row">
-      <div style="flex:1">
-        <div class="setting-label">URL de la API</div>
-        <input type="text" id="api-url-input" style="width:100%;margin-top:6px;padding:8px 10px;font-size:12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Mono',monospace" />
-      </div>
-    </div>
+    <div class="setting-label" style="margin-bottom:6px">URL de la API</div>
+    <input type="text" id="api-url-input" style="width:100%;padding:8px 10px;font-size:12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Mono',monospace" />
     <button class="btn-sm" style="width:100%;margin-top:8px" onclick="guardarAPI()">Guardar URL</button>
   </div>
-
 </div>
 
 <script>
-  // ── STATE ──
   let API_URL = localStorage.getItem('api_url') || 'https://sheetdb.io/api/v1/2v7bzkjganw8j';
   let scanner = null;
   let escaneando = false;
   let procesando = false;
   let cntTotal = parseInt(localStorage.getItem('cnt_total') || '0');
   let cntSesion = 0;
-  let geoActiva = false;
   let geoData = null;
   let tagSeleccionado = '';
   let tags = JSON.parse(localStorage.getItem('tags') || '["Entrada","Salida","Revisión","Urgente"]');
   let columnas = JSON.parse(localStorage.getItem('columnas') || JSON.stringify([
     { nombre: 'fecha', tipo: 'fecha' },
-    { nombre: 'codigo', tipo: 'texto' }
+    { nombre: 'codigo', tipo: 'texto' },
+    { nombre: 'geo', tipo: 'geo' }
   ]));
+  let scans = JSON.parse(localStorage.getItem('scans') || '[]');
 
-  // ── INIT ──
   document.getElementById('api-url-input').value = API_URL;
   actualizarContadores();
   renderColumnas();
@@ -448,7 +280,6 @@
   renderTagsSettings();
   checkTagsSection();
 
-  // ── TABS ──
   function showTab(name, el) {
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -456,55 +287,60 @@
     el.classList.add('active');
   }
 
-  // ── SCANNER ──
   function toggleScanner() {
     escaneando ? detener() : iniciar();
   }
 
   function iniciar() {
-    document.getElementById('visor').classList.add('activo');
-    document.getElementById('scanner-idle').style.display = 'none';
-    document.getElementById('btn-scan').textContent = '⏹ Detener escáner';
-    document.getElementById('btn-scan').classList.replace('btn-primary', 'btn-danger');
-    setEstado('Apunta al código QR...', 'leyendo');
+    const visor = document.getElementById('visor');
+    const idle = document.getElementById('scanner-idle');
+    const btn = document.getElementById('btn-scan');
+
+    visor.classList.add('activo');
+    idle.style.display = 'none';
+    btn.textContent = '⏹ Detener escáner';
+    btn.className = 'btn btn-danger';
+    setEstado('Iniciando cámara...', 'leyendo');
     escaneando = true;
 
-    const config = {
-      fps: 10,
-      qrbox: { width: 250, height: 150 },
-      rememberLastUsedCamera: true,
-      supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
-    };
-
     scanner = new Html5Qrcode('reader', { verbose: false });
-    scanner.start(
-      { facingMode: 'environment' },
-      config,
-      onScanExito,
-      () => {}
-    ).catch(err => {
-      // Fallback: try without facingMode constraint
+
+    Html5Qrcode.getCameras().then(cameras => {
+      if (!cameras || cameras.length === 0) {
+        setEstado('No se encontró ninguna cámara', 'err');
+        detener();
+        return;
+      }
+      // Prefer back camera
+      const cam = cameras.find(c => /back|rear|environment/i.test(c.label)) || cameras[cameras.length - 1];
       scanner.start(
-        { facingMode: 'user' },
-        config,
+        cam.id,
+        { fps: 10, qrbox: { width: 220, height: 220 } },
         onScanExito,
         () => {}
-      ).catch(err2 => {
-        setEstado('Error de cámara: ' + (err2.message || err2), 'err');
+      ).then(() => {
+        setEstado('Apunta al código...', 'leyendo');
+      }).catch(err => {
+        setEstado('Error: ' + err, 'err');
         detener();
       });
+    }).catch(err => {
+      setEstado('Sin acceso a cámara: ' + err, 'err');
+      detener();
     });
   }
 
   function detener() {
-    if (scanner) scanner.stop().then(() => { scanner.clear(); scanner = null; }).catch(() => {});
+    if (scanner) {
+      scanner.stop().catch(() => {}).finally(() => { scanner.clear(); scanner = null; });
+    }
     document.getElementById('visor').classList.remove('activo');
     document.getElementById('scanner-idle').style.display = 'flex';
     document.getElementById('btn-scan').textContent = '📷 Iniciar escáner';
-    document.getElementById('btn-scan').classList.replace('btn-danger', 'btn-primary');
+    document.getElementById('btn-scan').className = 'btn btn-primary';
     escaneando = false;
     procesando = false;
-    setEstado('Listo para escanear', 'idle');
+    setEstado('Listo para escanear', '');
   }
 
   function onScanExito(texto) {
@@ -531,27 +367,26 @@
     if (e.key === 'Enter') submitManual();
   });
 
-  // ── ENVIAR ──
   async function enviar(texto) {
     setEstado('Guardando...', 'leyendo');
     const ahora = new Date();
     const fechaHora = ahora.toLocaleDateString('es-MX', { day:'2-digit', month:'2-digit', year:'numeric' })
       + ' ' + ahora.toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
 
-    // Build data object from columns
     const data = {};
     for (const col of columnas) {
       if (col.tipo === 'fecha') data[col.nombre] = fechaHora;
       else if (col.tipo === 'texto' || col.tipo === 'numero') data[col.nombre] = texto;
       else if (col.tipo === 'tag') data[col.nombre] = tagSeleccionado;
-      else if (col.tipo === 'geo') {
-        data[col.nombre] = geoData ? geoData.lat + ',' + geoData.lng : '';
-      }
+      else if (col.tipo === 'geo') data[col.nombre] = geoData ? geoData.lat + ',' + geoData.lng : '';
     }
 
-    // Save locally always (for CSV fallback)
     scans.push(data);
     localStorage.setItem('scans', JSON.stringify(scans));
+    cntTotal++; cntSesion++;
+    localStorage.setItem('cnt_total', cntTotal);
+    actualizarContadores();
+    agregarHistorial(texto, fechaHora);
 
     try {
       await fetch(API_URL, {
@@ -559,47 +394,32 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ data })
       });
-      cntTotal++;
-      cntSesion++;
-      localStorage.setItem('cnt_total', cntTotal);
-      actualizarContadores();
       setEstado('✓ Guardado — ' + texto.substring(0, 30), 'ok');
-      agregarHistorial(texto, fechaHora);
     } catch {
-      cntTotal++;
-      cntSesion++;
-      localStorage.setItem('cnt_total', cntTotal);
-      actualizarContadores();
       setEstado('⚠ Sin conexión — guardado localmente', 'err');
-      agregarHistorial(texto, fechaHora);
-      procesando = false;
     }
   }
 
-  // ── GEO ──
   function toggleGeo() {
     const on = document.getElementById('geo-toggle').checked;
     const status = document.getElementById('geo-status');
     if (on) {
       navigator.geolocation.getCurrentPosition(pos => {
-        geoActiva = true;
         geoData = { lat: pos.coords.latitude.toFixed(6), lng: pos.coords.longitude.toFixed(6) };
         status.textContent = geoData.lat + ', ' + geoData.lng;
         status.className = 'geo-status on';
       }, () => {
         document.getElementById('geo-toggle').checked = false;
         status.textContent = 'Sin permiso';
-        status.className = 'geo-status off';
+        status.className = 'geo-status';
       });
     } else {
-      geoActiva = false;
       geoData = null;
       status.textContent = 'Desactivada';
-      status.className = 'geo-status off';
+      status.className = 'geo-status';
     }
   }
 
-  // ── HISTORIAL ──
   function agregarHistorial(texto, fechaHora) {
     const hist = document.getElementById('historial');
     const vacio = hist.querySelector('p');
@@ -611,8 +431,8 @@
         <div class="codigo">${texto}</div>
         <div class="meta">${fechaHora}</div>
       </div>
-      <div class="registro-right">
-        ${tagSeleccionado ? '<span class="tag-badge">' + tagSeleccionado + '</span>' : ''}
+      <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+        ${tagSeleccionado ? '<span class="tag-badge">'+tagSeleccionado+'</span>' : ''}
         ${geoData ? '<span class="geo-badge">📍</span>' : ''}
       </div>`;
     hist.insertBefore(div, hist.firstChild);
@@ -622,7 +442,20 @@
     document.getElementById('historial').innerHTML = '<p style="font-size:13px;color:var(--text2);text-align:center;padding:16px">Los escaneos aparecerán aquí</p>';
   }
 
-  // ── TAGS ──
+  function exportarCSV() {
+    if (scans.length === 0) { setEstado('No hay datos para exportar', 'err'); return; }
+    const headers = columnas.map(c => c.nombre).join(',');
+    const rows = scans.map(s => columnas.map(c => '"' + (s[c.nombre] || '').toString().replace(/"/g, '""') + '"').join(','));
+    const csv = headers + '\n' + rows.join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'escaneos_' + new Date().toISOString().slice(0,10) + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   function renderTagsChips() {
     const wrap = document.getElementById('tags-chips');
     wrap.innerHTML = '';
@@ -630,10 +463,7 @@
       const chip = document.createElement('div');
       chip.className = 'tag-chip' + (tagSeleccionado === tag ? ' selected' : '');
       chip.textContent = tag;
-      chip.onclick = () => {
-        tagSeleccionado = tagSeleccionado === tag ? '' : tag;
-        renderTagsChips();
-      };
+      chip.onclick = () => { tagSeleccionado = tagSeleccionado === tag ? '' : tag; renderTagsChips(); };
       wrap.appendChild(chip);
     });
   }
@@ -644,7 +474,7 @@
     tags.forEach((tag, i) => {
       const item = document.createElement('div');
       item.className = 'tag-item';
-      item.innerHTML = `${tag}<button onclick="eliminarTag(${i})">×</button>`;
+      item.innerHTML = tag + '<button onclick="eliminarTag(' + i + ')">×</button>';
       list.appendChild(item);
     });
   }
@@ -655,36 +485,28 @@
     tags.push(val);
     localStorage.setItem('tags', JSON.stringify(tags));
     document.getElementById('new-tag-input').value = '';
-    renderTagsChips();
-    renderTagsSettings();
+    renderTagsChips(); renderTagsSettings();
   }
 
   function eliminarTag(i) {
     tags.splice(i, 1);
     localStorage.setItem('tags', JSON.stringify(tags));
-    renderTagsChips();
-    renderTagsSettings();
+    renderTagsChips(); renderTagsSettings();
   }
 
   function checkTagsSection() {
-    const hasTagCol = columnas.some(c => c.tipo === 'tag');
-    document.getElementById('tags-section').style.display = hasTagCol ? 'block' : 'none';
+    document.getElementById('tags-section').style.display = columnas.some(c => c.tipo === 'tag') ? 'block' : 'none';
   }
 
-  // ── COLUMNAS ──
   function renderColumnas() {
     const list = document.getElementById('columns-list');
     list.innerHTML = '';
     columnas.forEach((col, i) => {
       const row = document.createElement('div');
       row.className = 'col-row';
-      row.draggable = true;
-      row.dataset.index = i;
-      row.innerHTML = `
-        <span class="drag-handle">⠿</span>
-        <input value="${col.nombre}" onchange="columnas[${i}].nombre=this.value;guardarColumnas()" />
-        <span class="col-type">${col.tipo}</span>
-        <button class="col-del" onclick="eliminarColumna(${i})">×</button>`;
+      row.innerHTML = '<input value="' + col.nombre + '" onchange="columnas[' + i + '].nombre=this.value;guardarColumnas()" />'
+        + '<span class="col-type">' + col.tipo + '</span>'
+        + '<button class="col-del" onclick="eliminarColumna(' + i + ')">×</button>';
       list.appendChild(row);
     });
   }
@@ -695,14 +517,12 @@
     if (!nombre) return;
     columnas.push({ nombre, tipo });
     document.getElementById('new-col-name').value = '';
-    guardarColumnas();
-    checkTagsSection();
+    guardarColumnas(); checkTagsSection();
   }
 
   function eliminarColumna(i) {
     columnas.splice(i, 1);
-    guardarColumnas();
-    checkTagsSection();
+    guardarColumnas(); checkTagsSection();
   }
 
   function guardarColumnas() {
@@ -710,15 +530,13 @@
     renderColumnas();
   }
 
-  // ── API ──
   function guardarAPI() {
     API_URL = document.getElementById('api-url-input').value.trim();
     localStorage.setItem('api_url', API_URL);
     setEstado('URL guardada', 'ok');
-    setTimeout(() => setEstado('Listo para escanear', 'idle'), 2000);
+    setTimeout(() => setEstado('Listo para escanear', ''), 2000);
   }
 
-  // ── UTILS ──
   function setEstado(msg, clase) {
     const el = document.getElementById('estado');
     el.textContent = msg;
@@ -730,36 +548,8 @@
     document.getElementById('cnt-sesion').textContent = cntSesion;
   }
 
-  // ── CSV EXPORT ──
-  let scans = JSON.parse(localStorage.getItem('scans') || '[]');
-
-  function exportarCSV() {
-    if (scans.length === 0) {
-      setEstado('No hay datos para exportar', 'err');
-      setTimeout(() => setEstado('Listo para escanear', 'idle'), 2000);
-      return;
-    }
-    const headers = columnas.map(c => c.nombre).join(',');
-    const rows = scans.map(s => columnas.map(c => {
-      const val = s[c.nombre] || '';
-      return '"' + String(val).replace(/"/g, '""') + '"'
-    }).join(','));
-    const csv = headers + '
-' + rows.join('
-');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'escaneos_' + new Date().toISOString().slice(0,10) + '.csv';
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
   function hapticFeedback() {
-    try {
-      if (navigator.vibrate) navigator.vibrate([40, 30, 80]);
-    } catch(e) {}
+    try { if (navigator.vibrate) navigator.vibrate([40, 30, 80]); } catch(e) {}
   }
 
   function reproducirSonido() {
