@@ -353,7 +353,10 @@
   <div class="historial-wrap">
     <div class="historial-label">
       <span>Últimos registros</span>
-      <button class="btn-sm" onclick="limpiarHistorial()">Limpiar</button>
+      <div style="display:flex;gap:6px">
+        <button class="btn-sm" onclick="exportarCSV()">⬇ CSV</button>
+        <button class="btn-sm" onclick="limpiarHistorial()">Limpiar</button>
+      </div>
     </div>
     <div class="historial" id="historial">
       <p style="font-size:13px;color:var(--text2);text-align:center;padding:16px">Los escaneos aparecerán aquí</p>
@@ -547,6 +550,10 @@
       }
     }
 
+    // Save locally always (for CSV fallback)
+    scans.push(data);
+    localStorage.setItem('scans', JSON.stringify(scans));
+
     try {
       await fetch(API_URL, {
         method: 'POST',
@@ -560,7 +567,12 @@
       setEstado('✓ Guardado — ' + texto.substring(0, 30), 'ok');
       agregarHistorial(texto, fechaHora);
     } catch {
-      setEstado('Error al guardar', 'err');
+      cntTotal++;
+      cntSesion++;
+      localStorage.setItem('cnt_total', cntTotal);
+      actualizarContadores();
+      setEstado('⚠ Sin conexión — guardado localmente', 'err');
+      agregarHistorial(texto, fechaHora);
       procesando = false;
     }
   }
@@ -717,6 +729,32 @@
   function actualizarContadores() {
     document.getElementById('cnt-total').textContent = cntTotal;
     document.getElementById('cnt-sesion').textContent = cntSesion;
+  }
+
+  // ── CSV EXPORT ──
+  let scans = JSON.parse(localStorage.getItem('scans') || '[]');
+
+  function exportarCSV() {
+    if (scans.length === 0) {
+      setEstado('No hay datos para exportar', 'err');
+      setTimeout(() => setEstado('Listo para escanear', 'idle'), 2000);
+      return;
+    }
+    const headers = columnas.map(c => c.nombre).join(',');
+    const rows = scans.map(s => columnas.map(c => {
+      const val = s[c.nombre] || '';
+      return '"' + String(val).replace(/"/g, '""') + '"'
+    }).join(','));
+    const csv = headers + '
+' + rows.join('
+');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'escaneos_' + new Date().toISOString().slice(0,10) + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   function hapticFeedback() {
