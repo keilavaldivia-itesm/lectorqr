@@ -509,6 +509,7 @@
     if (procesando) return;
     procesando = true;
     if (document.getElementById('opt-sonido').checked) reproducirSonido();
+    hapticFeedback();
     enviar(texto);
     if (document.getElementById('opt-continuo').checked) {
       setTimeout(() => { procesando = false; }, 2500);
@@ -520,6 +521,7 @@
     if (!val) return;
     document.getElementById('manual-input').value = '';
     if (document.getElementById('opt-sonido').checked) reproducirSonido();
+    hapticFeedback();
     enviar(val);
   }
 
@@ -715,6 +717,12 @@
   function actualizarContadores() {
     document.getElementById('cnt-total').textContent = cntTotal;
     document.getElementById('cnt-sesion').textContent = cntSesion;
+  }
+
+  function hapticFeedback() {
+    try {
+      if (navigator.vibrate) navigator.vibrate([40, 30, 80]);
+    } catch(e) {}
   }
 
   function reproducirSonido() {
