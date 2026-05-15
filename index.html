@@ -134,6 +134,22 @@
     .tag-item { display: flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 12px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); }
     .tag-item button { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 14px; line-height: 1; }
     .tag-item button:hover { color: var(--red); }
+
+    /* GAS Setup banner */
+    .setup-banner {
+      background: rgba(79,142,247,0.08); border: 1px solid rgba(79,142,247,0.25);
+      border-radius: var(--radius); padding: 14px; margin-bottom: 14px;
+      font-size: 13px; line-height: 1.6;
+    }
+    .setup-banner strong { color: var(--accent); display: block; margin-bottom: 6px; font-size: 14px; }
+    .setup-banner ol { padding-left: 18px; color: var(--text2); }
+    .setup-banner ol li { margin-bottom: 4px; }
+    .setup-banner code { font-family: 'DM Mono', monospace; background: var(--surface2); padding: 2px 6px; border-radius: 4px; color: var(--text); font-size: 12px; }
+    .setup-banner a { color: var(--accent); }
+
+    .gas-test-row { display: flex; gap: 8px; margin-top: 10px; }
+    .gas-test-row button { flex: 1; }
+
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
   </style>
@@ -154,6 +170,7 @@
   <div class="counter-row">
     <div class="counter-box"><div class="counter-val" id="cnt-total">0</div><div class="counter-lbl">Total</div></div>
     <div class="counter-box"><div class="counter-val" id="cnt-sesion">0</div><div class="counter-lbl">Esta sesión</div></div>
+    <div class="counter-box"><div class="counter-val" id="cnt-pendiente">0</div><div class="counter-lbl">Sin enviar</div></div>
   </div>
 
   <div class="scanner-wrap">
@@ -200,6 +217,7 @@
     <div class="historial-label">
       <span>Últimos registros</span>
       <div style="display:flex;gap:6px">
+        <button class="btn-sm" onclick="sincronizarPendientes()">☁ Sincronizar</button>
         <button class="btn-sm" onclick="exportarCSV()">⬇ CSV</button>
         <button class="btn-sm" onclick="limpiarHistorial()">Limpiar</button>
       </div>
@@ -211,8 +229,70 @@
 </div>
 
 <div id="tab-ajustes" class="panel">
+
+  <p class="section-title">Google Apps Script</p>
+  <div class="card-setting">
+    <div class="setup-banner">
+      <strong>⚙️ Cómo configurar tu Google Sheet</strong>
+      <ol>
+        <li>Abre tu Google Sheet y ve a <strong>Extensiones → Apps Script</strong></li>
+        <li>Borra el contenido y pega el código de abajo</li>
+        <li>Guarda (💾) y haz clic en <strong>Implementar → Nueva implementación</strong></li>
+        <li>Tipo: <code>Aplicación web</code> · Acceso: <code>Cualquier usuario</code></li>
+        <li>Copia la URL generada y pégala aquí abajo</li>
+      </ol>
+    </div>
+
+    <!-- GAS code to copy -->
+    <div style="margin-bottom:10px">
+      <div style="font-size:12px;color:var(--text2);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
+        <span>Código para Apps Script</span>
+        <button class="btn-sm" onclick="copiarGAS()">📋 Copiar</button>
+      </div>
+      <pre id="gas-code" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:11px;font-family:'DM Mono',monospace;color:var(--text2);overflow-x:auto;white-space:pre;line-height:1.5">function doPost(e) {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    var data  = JSON.parse(e.postData.contents);
+    var row   = data.row; // array of values in column order
+
+    // Write headers on first row if empty
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(data.headers);
+    }
+    sheet.appendRow(row);
+
+    return ContentService
+      .createTextOutput(JSON.stringify({ status: 'ok' }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ status: 'error', message: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function doGet(e) {
+  // Health check
+  return ContentService
+    .createTextOutput(JSON.stringify({ status: 'ok', message: 'Escaner Keila GAS activo' }))
+    .setMimeType(ContentService.MimeType.JSON);
+}</pre>
+    </div>
+
+    <div class="setting-label" style="margin-bottom:6px">URL de tu implementación</div>
+    <input type="text" id="api-url-input" placeholder="https://script.google.com/macros/s/…/exec"
+      style="width:100%;padding:8px 10px;font-size:12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Mono',monospace" />
+    <div class="gas-test-row">
+      <button class="btn-sm" onclick="guardarAPI()">💾 Guardar URL</button>
+      <button class="btn-sm" onclick="probarConexion()">🔗 Probar conexión</button>
+    </div>
+  </div>
+
   <p class="section-title">Columnas de datos</p>
   <div class="card-setting">
+    <div style="font-size:12px;color:var(--text2);margin-bottom:8px">
+      El orden aquí define el orden de columnas en tu Sheet. La primera fila se crea automáticamente como encabezado.
+    </div>
     <div class="columns-list" id="columns-list"></div>
     <div class="add-col-row">
       <input type="text" id="new-col-name" placeholder="Nombre columna..." />
@@ -248,16 +328,10 @@
     </div>
   </div>
 
-  <p class="section-title">API SheetDB</p>
-  <div class="card-setting">
-    <div class="setting-label" style="margin-bottom:6px">URL de la API</div>
-    <input type="text" id="api-url-input" style="width:100%;padding:8px 10px;font-size:12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Mono',monospace" />
-    <button class="btn-sm" style="width:100%;margin-top:8px" onclick="guardarAPI()">Guardar URL</button>
-  </div>
 </div>
 
 <script>
-  let API_URL = localStorage.getItem('api_url') || 'https://sheetdb.io/api/v1/2v7bzkjganw8j';
+  let API_URL = localStorage.getItem('api_url') || '';
   let scanner = null;
   let escaneando = false;
   let procesando = false;
@@ -269,9 +343,11 @@
   let columnas = JSON.parse(localStorage.getItem('columnas') || JSON.stringify([
     { nombre: 'fecha', tipo: 'fecha' },
     { nombre: 'codigo', tipo: 'texto' },
-    { nombre: 'geo', tipo: 'geo' }
+    { nombre: 'geo', tipo: 'geo' },
+    { nombre: 'etiqueta', tipo: 'tag' }
   ]));
   let scans = JSON.parse(localStorage.getItem('scans') || '[]');
+  let pendientes = JSON.parse(localStorage.getItem('pendientes') || '[]');
 
   document.getElementById('api-url-input').value = API_URL;
   actualizarContadores();
@@ -280,6 +356,7 @@
   renderTagsSettings();
   checkTagsSection();
 
+  // ─── Tabs ───────────────────────────────────────────────────────────────────
   function showTab(name, el) {
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -287,14 +364,15 @@
     el.classList.add('active');
   }
 
+  // ─── Scanner ────────────────────────────────────────────────────────────────
   function toggleScanner() {
     escaneando ? detener() : iniciar();
   }
 
   function iniciar() {
     const visor = document.getElementById('visor');
-    const idle = document.getElementById('scanner-idle');
-    const btn = document.getElementById('btn-scan');
+    const idle  = document.getElementById('scanner-idle');
+    const btn   = document.getElementById('btn-scan');
 
     visor.classList.add('activo');
     idle.style.display = 'none';
@@ -308,16 +386,13 @@
     Html5Qrcode.getCameras().then(cameras => {
       if (!cameras || cameras.length === 0) {
         setEstado('No se encontró ninguna cámara', 'err');
-        detener();
-        return;
+        detener(); return;
       }
-      // Prefer back camera
       const cam = cameras.find(c => /back|rear|environment/i.test(c.label)) || cameras[cameras.length - 1];
       scanner.start(
         cam.id,
         { fps: 10, qrbox: { width: 220, height: 220 } },
-        onScanExito,
-        () => {}
+        onScanExito, () => {}
       ).then(() => {
         setEstado('Apunta al código...', 'leyendo');
       }).catch(err => {
@@ -367,39 +442,113 @@
     if (e.key === 'Enter') submitManual();
   });
 
+  // ─── Envío a Google Apps Script ─────────────────────────────────────────────
   async function enviar(texto) {
     setEstado('Guardando...', 'leyendo');
     const ahora = new Date();
     const fechaHora = ahora.toLocaleDateString('es-MX', { day:'2-digit', month:'2-digit', year:'numeric' })
       + ' ' + ahora.toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
 
-    const data = {};
-    for (const col of columnas) {
-      if (col.tipo === 'fecha') data[col.nombre] = fechaHora;
-      else if (col.tipo === 'texto' || col.tipo === 'numero') data[col.nombre] = texto;
-      else if (col.tipo === 'tag') data[col.nombre] = tagSeleccionado;
-      else if (col.tipo === 'geo') data[col.nombre] = geoData ? geoData.lat + ',' + geoData.lng : '';
-    }
+    // Build row as ordered array + headers array (GAS will use these)
+    const headers = columnas.map(c => c.nombre);
+    const row = columnas.map(col => {
+      if (col.tipo === 'fecha')  return fechaHora;
+      if (col.tipo === 'texto' || col.tipo === 'numero') return texto;
+      if (col.tipo === 'tag')    return tagSeleccionado;
+      if (col.tipo === 'geo')    return geoData ? geoData.lat + ',' + geoData.lng : '';
+      return '';
+    });
 
-    scans.push(data);
+    const payload = { headers, row };
+
+    // Save locally always
+    const registro = {};
+    headers.forEach((h, i) => { registro[h] = row[i]; });
+    scans.push(registro);
     localStorage.setItem('scans', JSON.stringify(scans));
+
     cntTotal++; cntSesion++;
     localStorage.setItem('cnt_total', cntTotal);
     actualizarContadores();
     agregarHistorial(texto, fechaHora);
 
+    // Send to GAS
+    if (!API_URL) {
+      setEstado('⚠ Sin URL — guardado localmente', 'err');
+      pendientes.push(payload);
+      localStorage.setItem('pendientes', JSON.stringify(pendientes));
+      actualizarContadores();
+      return;
+    }
+
     try {
+      // GAS requires no-cors OR a proper CORS-enabled deployment.
+      // We use no-cors and trust local save as source of truth.
       await fetch(API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data })
+        mode: 'no-cors',          // GAS deployments require this from external origins
+        headers: { 'Content-Type': 'text/plain' }, // no-cors only allows simple content-types
+        body: JSON.stringify(payload)
       });
       setEstado('✓ Guardado — ' + texto.substring(0, 30), 'ok');
     } catch {
       setEstado('⚠ Sin conexión — guardado localmente', 'err');
+      pendientes.push(payload);
+      localStorage.setItem('pendientes', JSON.stringify(pendientes));
+      actualizarContadores();
     }
   }
 
+  // Retry unsent records
+  async function sincronizarPendientes() {
+    if (!API_URL) { setEstado('Configura la URL de Apps Script primero', 'err'); return; }
+    if (pendientes.length === 0) { setEstado('No hay registros pendientes', 'ok'); return; }
+
+    setEstado('Sincronizando ' + pendientes.length + ' pendientes...', 'leyendo');
+    let enviados = 0;
+    const fallidos = [];
+
+    for (const payload of pendientes) {
+      try {
+        await fetch(API_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify(payload)
+        });
+        enviados++;
+      } catch {
+        fallidos.push(payload);
+      }
+    }
+
+    pendientes = fallidos;
+    localStorage.setItem('pendientes', JSON.stringify(pendientes));
+    actualizarContadores();
+    setEstado('✓ Sincronizados ' + enviados + ' · Pendientes: ' + fallidos.length, enviados > 0 ? 'ok' : 'err');
+  }
+
+  // ─── Connection test ─────────────────────────────────────────────────────────
+  async function probarConexion() {
+    const url = document.getElementById('api-url-input').value.trim();
+    if (!url) { setEstado('Ingresa la URL primero', 'err'); return; }
+    setEstado('Probando conexión...', 'leyendo');
+    try {
+      // doGet returns a JSON health check
+      const res = await fetch(url, { mode: 'cors' });
+      const json = await res.json();
+      if (json.status === 'ok') {
+        setEstado('✓ Conexión exitosa con Apps Script', 'ok');
+      } else {
+        setEstado('⚠ Respuesta inesperada: ' + JSON.stringify(json), 'err');
+      }
+    } catch {
+      // no-cors fallback — we can't read the response but at least we know it reached
+      setEstado('⚠ No se pudo leer respuesta (normal con no-cors). Prueba hacer un escaneo de prueba.', 'err');
+    }
+  }
+
+  // ─── Geo ─────────────────────────────────────────────────────────────────────
   function toggleGeo() {
     const on = document.getElementById('geo-toggle').checked;
     const status = document.getElementById('geo-status');
@@ -420,6 +569,7 @@
     }
   }
 
+  // ─── Historial ────────────────────────────────────────────────────────────────
   function agregarHistorial(texto, fechaHora) {
     const hist = document.getElementById('historial');
     const vacio = hist.querySelector('p');
@@ -456,6 +606,7 @@
     URL.revokeObjectURL(url);
   }
 
+  // ─── Tags ────────────────────────────────────────────────────────────────────
   function renderTagsChips() {
     const wrap = document.getElementById('tags-chips');
     wrap.innerHTML = '';
@@ -498,6 +649,7 @@
     document.getElementById('tags-section').style.display = columnas.some(c => c.tipo === 'tag') ? 'block' : 'none';
   }
 
+  // ─── Columnas ────────────────────────────────────────────────────────────────
   function renderColumnas() {
     const list = document.getElementById('columns-list');
     list.innerHTML = '';
@@ -513,7 +665,7 @@
 
   function agregarColumna() {
     const nombre = document.getElementById('new-col-name').value.trim();
-    const tipo = document.getElementById('new-col-type').value;
+    const tipo   = document.getElementById('new-col-type').value;
     if (!nombre) return;
     columnas.push({ nombre, tipo });
     document.getElementById('new-col-name').value = '';
@@ -530,6 +682,7 @@
     renderColumnas();
   }
 
+  // ─── API ──────────────────────────────────────────────────────────────────────
   function guardarAPI() {
     API_URL = document.getElementById('api-url-input').value.trim();
     localStorage.setItem('api_url', API_URL);
@@ -537,6 +690,18 @@
     setTimeout(() => setEstado('Listo para escanear', ''), 2000);
   }
 
+  // ─── Copy GAS code ───────────────────────────────────────────────────────────
+  function copiarGAS() {
+    const code = document.getElementById('gas-code').textContent;
+    navigator.clipboard.writeText(code).then(() => {
+      setEstado('✓ Código copiado al portapapeles', 'ok');
+      setTimeout(() => setEstado('Listo para escanear', ''), 2000);
+    }).catch(() => {
+      setEstado('No se pudo copiar, selecciona el texto manualmente', 'err');
+    });
+  }
+
+  // ─── Helpers ─────────────────────────────────────────────────────────────────
   function setEstado(msg, clase) {
     const el = document.getElementById('estado');
     el.textContent = msg;
@@ -546,6 +711,7 @@
   function actualizarContadores() {
     document.getElementById('cnt-total').textContent = cntTotal;
     document.getElementById('cnt-sesion').textContent = cntSesion;
+    document.getElementById('cnt-pendiente').textContent = pendientes.length;
   }
 
   function hapticFeedback() {
