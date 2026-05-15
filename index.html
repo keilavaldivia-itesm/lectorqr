@@ -3,152 +3,277 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Escáner Keila</title>
+  <title>Escáner QR — Tec de Monterrey</title>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0f1117;
-      --surface: #1a1d27;
-      --surface2: #22263a;
-      --accent: #4f8ef7;
-      --accent2: #7c6af7;
-      --green: #34d399;
-      --red: #f87171;
-      --text: #e8eaf0;
-      --text2: #8b90a7;
-      --border: #2d3148;
-      --radius: 12px;
+      --azul:      #0033A0;
+      --azul-dark: #002278;
+      --azul-deep: #001550;
+      --azul-mid:  #003366;
+      --azul-light:#e8eef8;
+      --azul-glow: rgba(0,51,160,0.18);
+      --bg:        #f4f6fb;
+      --surface:   #ffffff;
+      --surface2:  #eef1f8;
+      --border:    #d0d8ee;
+      --text:      #0a1233;
+      --text2:     #5a6483;
+      --green:     #00875a;
+      --green-bg:  #e6f4ef;
+      --red:       #cc2200;
+      --red-bg:    #fdecea;
+      --amber:     #b45309;
+      --amber-bg:  #fef3c7;
+      --radius:    10px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    body { font-family: 'IBM Plex Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
+    /* ── HEADER ─────────────────────────────────────────── */
     .header {
-      background: var(--surface); border-bottom: 1px solid var(--border);
-      padding: 14px 20px; display: flex; align-items: center; justify-content: space-between;
+      background: var(--azul);
+      padding: 0 20px;
+      display: flex; align-items: center; justify-content: space-between;
       position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 2px 12px rgba(0,33,120,0.25);
+      min-height: 56px;
     }
-    .header h1 { font-size: 16px; font-weight: 600; }
-    .header h1 span { color: var(--accent); }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+
+    /* Tec logo — inline SVG symbol */
+    .tec-symbol {
+      width: 32px; height: 32px; flex-shrink: 0;
+    }
+
+    .header-titles { display: flex; flex-direction: column; }
+    .header-titles .app-name { font-size: 15px; font-weight: 700; color: #fff; letter-spacing: 0.2px; line-height: 1.2; }
+    .header-titles .sub { font-size: 10px; color: rgba(255,255,255,0.65); letter-spacing: 0.8px; text-transform: uppercase; }
+
     .badge-live {
-      display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--green);
-      background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.2);
+      display: flex; align-items: center; gap: 5px;
+      font-size: 11px; font-weight: 600; color: #fff;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.25);
       border-radius: 20px; padding: 4px 10px;
     }
-    .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 1.5s infinite; }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: #5ef0a0; animation: pulse 1.5s infinite; }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
-    .tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 16px; gap: 4px; }
-    .tab { padding: 12px 16px; font-size: 13px; font-weight: 500; color: var(--text2); border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; font-family: inherit; }
-    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    /* ── TABS ───────────────────────────────────────────── */
+    .tabs {
+      display: flex; background: var(--surface);
+      border-bottom: 2px solid var(--border);
+      padding: 0 16px; gap: 0;
+    }
+    .tab {
+      padding: 13px 18px; font-size: 13px; font-weight: 600;
+      color: var(--text2); border: none; background: none; cursor: pointer;
+      border-bottom: 3px solid transparent; margin-bottom: -2px;
+      transition: all 0.2s; font-family: inherit; letter-spacing: 0.2px;
+    }
+    .tab.active { color: var(--azul); border-bottom-color: var(--azul); }
 
-    .panel { display: none; padding: 16px; max-width: 600px; margin: 0 auto; }
+    /* ── PANELS ─────────────────────────────────────────── */
+    .panel { display: none; padding: 16px; max-width: 560px; margin: 0 auto; }
     .panel.active { display: block; }
 
+    /* ── COUNTERS ───────────────────────────────────────── */
     .counter-row { display: flex; gap: 8px; margin-bottom: 14px; }
-    .counter-box { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px; text-align: center; }
-    .counter-val { font-size: 22px; font-weight: 600; font-family: 'DM Mono', monospace; color: var(--accent); }
-    .counter-lbl { font-size: 11px; color: var(--text2); margin-top: 2px; }
+    .counter-box {
+      flex: 1; background: var(--surface);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 12px 8px; text-align: center;
+      box-shadow: 0 1px 4px rgba(0,33,120,0.06);
+    }
+    .counter-val { font-size: 24px; font-weight: 700; font-family: 'IBM Plex Mono', monospace; color: var(--azul); }
+    .counter-lbl { font-size: 10px; color: var(--text2); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .counter-box.warn .counter-val { color: var(--amber); }
 
-    .scanner-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 14px; }
+    /* ── SCANNER ─────────────────────────────────────────── */
+    .scanner-wrap {
+      background: var(--text); border-radius: var(--radius);
+      overflow: hidden; margin-bottom: 12px;
+      box-shadow: 0 4px 20px rgba(0,33,120,0.15);
+    }
     #visor { width: 100%; aspect-ratio: 1; background: #000; display: none; position: relative; }
     #visor.activo { display: block; }
     #reader { width: 100%; height: 100%; }
     .scan-overlay { position: absolute; inset: 0; pointer-events: none; display: flex; align-items: center; justify-content: center; }
-    .scan-box { width: 200px; height: 200px; border: 2px solid var(--accent); border-radius: 8px; position: relative; box-shadow: 0 0 0 9999px rgba(0,0,0,0.4); }
-    .scan-line { position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--accent); animation: scanline 2s linear infinite; box-shadow: 0 0 8px var(--accent); }
-    @keyframes scanline { 0%{top:0} 100%{top:100%} }
-    .corner { position: absolute; width: 20px; height: 20px; border-color: var(--accent2); border-style: solid; }
+    .scan-box {
+      width: 210px; height: 210px;
+      border: 2.5px solid #0033A0;
+      border-radius: 6px; position: relative;
+      box-shadow: 0 0 0 9999px rgba(0,0,0,0.45);
+    }
+    .scan-line {
+      position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, #0033A0, transparent);
+      animation: scanline 2s ease-in-out infinite;
+      box-shadow: 0 0 10px #0033A0;
+    }
+    @keyframes scanline { 0%{top:0;opacity:1} 90%{opacity:1} 100%{top:100%;opacity:0} }
+    .corner { position: absolute; width: 22px; height: 22px; border-color: #fff; border-style: solid; }
     .corner.tl { top:-2px; left:-2px; border-width:3px 0 0 3px; border-radius:4px 0 0 0; }
     .corner.tr { top:-2px; right:-2px; border-width:3px 3px 0 0; border-radius:0 4px 0 0; }
     .corner.bl { bottom:-2px; left:-2px; border-width:0 0 3px 3px; border-radius:0 0 0 4px; }
     .corner.br { bottom:-2px; right:-2px; border-width:0 3px 3px 0; border-radius:0 0 4px 0; }
 
-    .scanner-idle { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; gap: 12px; color: var(--text2); }
-    .scanner-idle svg { opacity: 0.3; }
-    .scanner-idle p { font-size: 14px; }
+    .scanner-idle {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 44px 20px; gap: 12px; color: rgba(255,255,255,0.4);
+      background: #0a1233;
+    }
+    .scanner-idle svg { opacity: 0.25; }
+    .scanner-idle p { font-size: 13px; color: rgba(255,255,255,0.45); }
 
-    .btn { width: 100%; padding: 14px; font-size: 15px; font-weight: 600; border: none; border-radius: var(--radius); cursor: pointer; font-family: inherit; transition: all 0.15s; }
-    .btn-primary { background: var(--accent); color: #fff; }
-    .btn-primary:hover { background: #3a7bf0; }
+    /* ── BUTTONS ─────────────────────────────────────────── */
+    .btn { width: 100%; padding: 14px; font-size: 15px; font-weight: 700; border: none; border-radius: var(--radius); cursor: pointer; font-family: inherit; transition: all 0.15s; letter-spacing: 0.3px; }
+    .btn-primary { background: var(--azul); color: #fff; }
+    .btn-primary:hover { background: var(--azul-dark); }
     .btn-danger { background: var(--red); color: #fff; }
-    .btn-sm { padding: 7px 14px; font-size: 13px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface2); color: var(--text); cursor: pointer; font-family: inherit; }
-    .btn-sm:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-danger:hover { opacity: 0.9; }
+    .btn-sm {
+      padding: 7px 13px; font-size: 12px; font-weight: 600; border-radius: 7px;
+      border: 1.5px solid var(--border); background: var(--surface);
+      color: var(--text2); cursor: pointer; font-family: inherit; transition: all 0.15s;
+    }
+    .btn-sm:hover { border-color: var(--azul); color: var(--azul); background: var(--azul-light); }
 
-    #estado { text-align: center; font-size: 13px; padding: 8px; min-height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 8px; margin: 10px 0; color: var(--text2); }
-    #estado.ok { background: rgba(52,211,153,0.1); color: var(--green); }
-    #estado.err { background: rgba(248,113,113,0.1); color: var(--red); }
-    #estado.leyendo { background: rgba(79,142,247,0.1); color: var(--accent); }
+    /* ── STATUS ──────────────────────────────────────────── */
+    #estado {
+      text-align: center; font-size: 13px; font-weight: 500;
+      padding: 9px 12px; min-height: 38px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 8px; margin: 10px 0; color: var(--text2);
+      background: var(--surface2); border: 1px solid var(--border);
+    }
+    #estado.ok  { background: var(--green-bg); color: var(--green); border-color: #a3d9c3; }
+    #estado.err { background: var(--red-bg); color: var(--red); border-color: #f5c4bc; }
+    #estado.leyendo { background: var(--azul-light); color: var(--azul); border-color: #b0c4e8; }
+    #estado.warn { background: var(--amber-bg); color: var(--amber); border-color: #fcd8a0; }
 
-    .geo-row { display: flex; align-items: center; gap: 8px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; font-size: 13px; }
-    .geo-row span:first-child { flex: 1; }
+    /* ── GEO ─────────────────────────────────────────────── */
+    .geo-row {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 9px 13px; margin-bottom: 10px; font-size: 13px;
+      font-weight: 500;
+    }
+    .geo-row span:first-child { flex: 1; color: var(--text); }
     .geo-status { font-size: 11px; color: var(--text2); }
-    .geo-status.on { color: var(--green); }
+    .geo-status.on { color: var(--green); font-weight: 600; }
     .toggle { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
     .toggle input { opacity: 0; width: 0; height: 0; }
-    .toggle-slider { position: absolute; inset: 0; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; cursor: pointer; transition: 0.2s; }
-    .toggle-slider:before { content: ''; position: absolute; width: 16px; height: 16px; left: 2px; top: 2px; background: var(--text2); border-radius: 50%; transition: 0.2s; }
-    .toggle input:checked + .toggle-slider { background: var(--accent); border-color: var(--accent); }
-    .toggle input:checked + .toggle-slider:before { transform: translateX(18px); background: #fff; }
+    .toggle-slider { position: absolute; inset: 0; background: var(--border); border-radius: 20px; cursor: pointer; transition: 0.2s; }
+    .toggle-slider:before { content: ''; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+    .toggle input:checked + .toggle-slider { background: var(--azul); }
+    .toggle input:checked + .toggle-slider:before { transform: translateX(18px); }
 
-    .tags-section { margin-bottom: 14px; }
-    .tags-section label { font-size: 12px; color: var(--text2); margin-bottom: 6px; display: block; }
+    /* ── TAGS ────────────────────────────────────────────── */
+    .tags-section { margin-bottom: 10px; }
+    .tags-section label { font-size: 11px; color: var(--text2); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
     .tags-row { display: flex; flex-wrap: wrap; gap: 6px; }
-    .tag-chip { padding: 5px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; border: 1px solid var(--border); background: var(--surface2); color: var(--text2); transition: all 0.15s; }
-    .tag-chip.selected { background: rgba(79,142,247,0.15); border-color: var(--accent); color: var(--accent); }
+    .tag-chip {
+      padding: 5px 13px; border-radius: 20px; font-size: 12px; font-weight: 600;
+      cursor: pointer; border: 1.5px solid var(--border);
+      background: var(--surface); color: var(--text2); transition: all 0.15s;
+    }
+    .tag-chip.selected { background: var(--azul-light); border-color: var(--azul); color: var(--azul); }
 
+    /* ── MANUAL ──────────────────────────────────────────── */
     .manual-row { display: flex; gap: 8px; margin-bottom: 14px; }
-    .manual-row input { flex: 1; padding: 10px 14px; font-size: 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: 'DM Mono', monospace; }
-    .manual-row input:focus { outline: none; border-color: var(--accent); }
+    .manual-row input {
+      flex: 1; padding: 10px 13px; font-size: 13px;
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: 8px; color: var(--text); font-family: 'IBM Plex Mono', monospace;
+    }
+    .manual-row input:focus { outline: none; border-color: var(--azul); }
     .manual-row input::placeholder { color: var(--text2); }
 
-    .historial-label { font-size: 12px; color: var(--text2); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
-    .historial { display: flex; flex-direction: column; gap: 6px; max-height: 240px; overflow-y: auto; }
-    .registro { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; animation: slideIn 0.2s ease; }
-    @keyframes slideIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:none} }
-    .registro-left .codigo { font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500; }
+    /* ── HISTORIAL ───────────────────────────────────────── */
+    .historial-label {
+      font-size: 11px; color: var(--text2); font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;
+    }
+    .historial { display: flex; flex-direction: column; gap: 6px; max-height: 250px; overflow-y: auto; }
+    .registro {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 13px;
+      display: flex; justify-content: space-between; align-items: center;
+      animation: slideIn 0.2s ease;
+      box-shadow: 0 1px 4px rgba(0,33,120,0.05);
+    }
+    @keyframes slideIn { from{opacity:0;transform:translateY(-5px)} to{opacity:1;transform:none} }
+    .registro-left .codigo { font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 500; color: var(--text); }
     .registro-left .meta { font-size: 11px; color: var(--text2); margin-top: 2px; }
-    .tag-badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: rgba(124,106,247,0.15); color: var(--accent2); border: 1px solid rgba(124,106,247,0.2); }
-    .geo-badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: rgba(52,211,153,0.1); color: var(--green); border: 1px solid rgba(52,211,153,0.2); }
+    .tag-badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: var(--azul-light); color: var(--azul); border: 1px solid #b0c4e8; font-weight: 600; }
+    .geo-badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: var(--green-bg); color: var(--green); border: 1px solid #a3d9c3; }
 
-    /* SETTINGS */
-    .section-title { font-size: 13px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; margin-top: 20px; }
+    /* ── SETTINGS ────────────────────────────────────────── */
+    .section-title {
+      font-size: 11px; font-weight: 700; color: var(--text2);
+      text-transform: uppercase; letter-spacing: 0.8px;
+      margin-bottom: 8px; margin-top: 20px;
+    }
     .section-title:first-child { margin-top: 0; }
-    .card-setting { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; }
+    .card-setting {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px; margin-bottom: 10px;
+      box-shadow: 0 1px 4px rgba(0,33,120,0.06);
+    }
     .setting-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
     .setting-row:last-child { margin-bottom: 0; }
-    .setting-label { font-size: 14px; }
+    .setting-label { font-size: 14px; font-weight: 500; }
     .setting-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
     .columns-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
-    .col-row { display: flex; align-items: center; gap: 8px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; }
-    .col-row input { flex: 1; background: none; border: none; color: var(--text); font-size: 13px; font-family: 'DM Mono', monospace; }
+    .col-row {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 8px 10px;
+    }
+    .col-row input { flex: 1; background: none; border: none; color: var(--text); font-size: 13px; font-family: 'IBM Plex Mono', monospace; }
     .col-row input:focus { outline: none; }
-    .col-type { font-size: 11px; padding: 3px 8px; border-radius: 6px; background: var(--surface); border: 1px solid var(--border); color: var(--text2); }
+    .col-type { font-size: 11px; padding: 3px 8px; border-radius: 6px; background: var(--azul-light); border: 1px solid #b0c4e8; color: var(--azul); font-weight: 600; }
     .col-del { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 16px; padding: 0 4px; }
     .col-del:hover { color: var(--red); }
     .add-col-row { display: flex; gap: 8px; }
-    .add-col-row input, .add-col-row select { flex: 1; padding: 8px 12px; font-size: 13px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: inherit; }
+    .add-col-row input, .add-col-row select {
+      flex: 1; padding: 8px 10px; font-size: 12px;
+      background: var(--surface2); border: 1.5px solid var(--border);
+      border-radius: 8px; color: var(--text); font-family: inherit;
+    }
     .tags-input-row { display: flex; gap: 8px; }
-    .tags-input-row input { flex: 1; padding: 8px 12px; font-size: 13px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: inherit; }
+    .tags-input-row input {
+      flex: 1; padding: 8px 12px; font-size: 13px;
+      background: var(--surface2); border: 1.5px solid var(--border);
+      border-radius: 8px; color: var(--text); font-family: inherit;
+    }
     .tags-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-    .tag-item { display: flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 12px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); }
-    .tag-item button { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 14px; line-height: 1; }
+    .tag-item {
+      display: flex; align-items: center; gap: 6px; padding: 4px 10px;
+      border-radius: 20px; font-size: 12px; font-weight: 600;
+      background: var(--azul-light); border: 1px solid #b0c4e8; color: var(--azul);
+    }
+    .tag-item button { background: none; border: none; color: #7090c0; cursor: pointer; font-size: 14px; line-height: 1; }
     .tag-item button:hover { color: var(--red); }
 
-    /* GAS Setup banner */
+    /* GAS Setup */
     .setup-banner {
-      background: rgba(79,142,247,0.08); border: 1px solid rgba(79,142,247,0.25);
-      border-radius: var(--radius); padding: 14px; margin-bottom: 14px;
-      font-size: 13px; line-height: 1.6;
+      background: var(--azul-light); border: 1px solid #b0c4e8;
+      border-radius: 8px; padding: 12px 14px; margin-bottom: 12px;
+      font-size: 13px; line-height: 1.7;
     }
-    .setup-banner strong { color: var(--accent); display: block; margin-bottom: 6px; font-size: 14px; }
+    .setup-banner strong { color: var(--azul); display: block; margin-bottom: 6px; font-size: 13px; font-weight: 700; }
     .setup-banner ol { padding-left: 18px; color: var(--text2); }
-    .setup-banner ol li { margin-bottom: 4px; }
-    .setup-banner code { font-family: 'DM Mono', monospace; background: var(--surface2); padding: 2px 6px; border-radius: 4px; color: var(--text); font-size: 12px; }
-    .setup-banner a { color: var(--accent); }
-
+    .setup-banner ol li { margin-bottom: 3px; }
+    .setup-banner code { font-family: 'IBM Plex Mono', monospace; background: #fff; padding: 1px 5px; border-radius: 4px; color: var(--azul-mid); font-size: 12px; border: 1px solid #d0d8ee; }
     .gas-test-row { display: flex; gap: 8px; margin-top: 10px; }
     .gas-test-row button { flex: 1; }
+
+    .divider { height: 1px; background: var(--border); margin: 12px 0; }
 
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
@@ -156,21 +281,49 @@
 </head>
 <body>
 
+<!-- HEADER -->
 <div class="header">
-  <h1>Escáner <span>Keila</span></h1>
+  <div class="header-left">
+    <!-- Tec de Monterrey symbol SVG (simplified inline) -->
+    <svg class="tec-symbol" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <!-- Shield shape -->
+      <path d="M50 5 L90 20 L90 60 Q90 85 50 97 Q10 85 10 60 L10 20 Z" fill="white" opacity="0.95"/>
+      <!-- Blue inner shape -->
+      <path d="M50 14 L82 27 L82 59 Q82 79 50 90 Q18 79 18 59 L18 27 Z" fill="#0033A0"/>
+      <!-- White letter T stylized -->
+      <rect x="33" y="35" width="34" height="8" rx="2" fill="white"/>
+      <rect x="46" y="43" width="8" height="24" rx="2" fill="white"/>
+    </svg>
+    <div class="header-titles">
+      <span class="app-name">Escáner QR</span>
+      <span class="sub">Tec de Monterrey</span>
+    </div>
+  </div>
   <div class="badge-live"><div class="dot"></div> En vivo</div>
 </div>
 
+<!-- TABS -->
 <div class="tabs">
   <button class="tab active" onclick="showTab('escanear', this)">📷 Escanear</button>
   <button class="tab" onclick="showTab('ajustes', this)">⚙️ Ajustes</button>
 </div>
 
+<!-- ══════════════ TAB ESCANEAR ══════════════ -->
 <div id="tab-escanear" class="panel active">
+
   <div class="counter-row">
-    <div class="counter-box"><div class="counter-val" id="cnt-total">0</div><div class="counter-lbl">Total</div></div>
-    <div class="counter-box"><div class="counter-val" id="cnt-sesion">0</div><div class="counter-lbl">Esta sesión</div></div>
-    <div class="counter-box"><div class="counter-val" id="cnt-pendiente">0</div><div class="counter-lbl">Sin enviar</div></div>
+    <div class="counter-box">
+      <div class="counter-val" id="cnt-total">0</div>
+      <div class="counter-lbl">Total</div>
+    </div>
+    <div class="counter-box">
+      <div class="counter-val" id="cnt-sesion">0</div>
+      <div class="counter-lbl">Sesión</div>
+    </div>
+    <div class="counter-box warn" id="box-pendiente">
+      <div class="counter-val" id="cnt-pendiente">0</div>
+      <div class="counter-lbl">Sin enviar</div>
+    </div>
   </div>
 
   <div class="scanner-wrap">
@@ -185,7 +338,7 @@
       </div>
     </div>
     <div id="scanner-idle" class="scanner-idle">
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
         <path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/>
         <rect x="7" y="7" width="3" height="3"/><rect x="14" y="7" width="3" height="3"/>
         <rect x="7" y="14" width="3" height="3"/><path d="M14 14h3v3"/>
@@ -223,44 +376,41 @@
       </div>
     </div>
     <div class="historial" id="historial">
-      <p style="font-size:13px;color:var(--text2);text-align:center;padding:16px">Los escaneos aparecerán aquí</p>
+      <p style="font-size:13px;color:var(--text2);text-align:center;padding:20px">Los escaneos aparecerán aquí</p>
     </div>
   </div>
 </div>
 
+<!-- ══════════════ TAB AJUSTES ══════════════ -->
 <div id="tab-ajustes" class="panel">
 
   <p class="section-title">Google Apps Script</p>
   <div class="card-setting">
     <div class="setup-banner">
-      <strong>⚙️ Cómo configurar tu Google Sheet</strong>
+      <strong>⚙️ Cómo conectar tu Google Sheet</strong>
       <ol>
-        <li>Abre tu Google Sheet y ve a <strong>Extensiones → Apps Script</strong></li>
-        <li>Borra el contenido y pega el código de abajo</li>
-        <li>Guarda (💾) y haz clic en <strong>Implementar → Nueva implementación</strong></li>
+        <li>Abre tu Google Sheet → <strong>Extensiones → Apps Script</strong></li>
+        <li>Selecciona todo (<code>Ctrl+A</code>), pega el código de abajo</li>
+        <li>Guarda (<code>Ctrl+S</code>) → <strong>Implementar → Nueva implementación</strong></li>
         <li>Tipo: <code>Aplicación web</code> · Acceso: <code>Cualquier usuario</code></li>
-        <li>Copia la URL generada y pégala aquí abajo</li>
+        <li>Copia la URL <code>/exec</code> y pégala aquí abajo</li>
       </ol>
     </div>
 
-    <!-- GAS code to copy -->
     <div style="margin-bottom:10px">
-      <div style="font-size:12px;color:var(--text2);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
+      <div style="font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
         <span>Código para Apps Script</span>
         <button class="btn-sm" onclick="copiarGAS()">📋 Copiar</button>
       </div>
-      <pre id="gas-code" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:11px;font-family:'DM Mono',monospace;color:var(--text2);overflow-x:auto;white-space:pre;line-height:1.5">function doPost(e) {
+      <pre id="gas-code" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--text2);overflow-x:auto;white-space:pre;line-height:1.6">function doPost(e) {
   try {
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
     var data  = JSON.parse(e.postData.contents);
-    var row   = data.row; // array of values in column order
-
-    // Write headers on first row if empty
+    var row   = data.row;
     if (sheet.getLastRow() === 0) {
       sheet.appendRow(data.headers);
     }
     sheet.appendRow(row);
-
     return ContentService
       .createTextOutput(JSON.stringify({ status: 'ok' }))
       .setMimeType(ContentService.MimeType.JSON);
@@ -272,16 +422,16 @@
 }
 
 function doGet(e) {
-  // Health check
   return ContentService
-    .createTextOutput(JSON.stringify({ status: 'ok', message: 'Escaner Keila GAS activo' }))
+    .createTextOutput(JSON.stringify({ status: 'ok', message: 'Escaner Tec activo' }))
     .setMimeType(ContentService.MimeType.JSON);
 }</pre>
     </div>
 
-    <div class="setting-label" style="margin-bottom:6px">URL de tu implementación</div>
-    <input type="text" id="api-url-input" placeholder="https://script.google.com/macros/s/…/exec"
-      style="width:100%;padding:8px 10px;font-size:12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Mono',monospace" />
+    <div style="font-size:13px;font-weight:600;margin-bottom:6px;">URL de tu implementación</div>
+    <input type="text" id="api-url-input"
+      placeholder="https://script.google.com/macros/s/…/exec"
+      style="width:100%;padding:9px 11px;font-size:12px;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;color:var(--text);font-family:'IBM Plex Mono',monospace;" />
     <div class="gas-test-row">
       <button class="btn-sm" onclick="guardarAPI()">💾 Guardar URL</button>
       <button class="btn-sm" onclick="probarConexion()">🔗 Probar conexión</button>
@@ -290,8 +440,8 @@ function doGet(e) {
 
   <p class="section-title">Columnas de datos</p>
   <div class="card-setting">
-    <div style="font-size:12px;color:var(--text2);margin-bottom:8px">
-      El orden aquí define el orden de columnas en tu Sheet. La primera fila se crea automáticamente como encabezado.
+    <div style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.5">
+      El orden define las columnas en tu Sheet. La primera fila se crea automáticamente como encabezado.
     </div>
     <div class="columns-list" id="columns-list"></div>
     <div class="add-col-row">
@@ -331,22 +481,25 @@ function doGet(e) {
 </div>
 
 <script>
-  let API_URL = localStorage.getItem('api_url') || '';
-  let scanner = null;
+  // ── URL pre-cargada de Google Apps Script ──────────────────────────────────
+  const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbzCHyzDnEeETsVdfPJUKfoGxZwMnwlezzz5JVOYcdGh9rwvPUENd2FcD5Aowq6HsDnK/exec';
+
+  let API_URL    = localStorage.getItem('api_url') || GAS_URL_DEFAULT;
+  let scanner    = null;
   let escaneando = false;
   let procesando = false;
-  let cntTotal = parseInt(localStorage.getItem('cnt_total') || '0');
-  let cntSesion = 0;
-  let geoData = null;
+  let cntTotal   = parseInt(localStorage.getItem('cnt_total') || '0');
+  let cntSesion  = 0;
+  let geoData    = null;
   let tagSeleccionado = '';
-  let tags = JSON.parse(localStorage.getItem('tags') || '["Entrada","Salida","Revisión","Urgente"]');
-  let columnas = JSON.parse(localStorage.getItem('columnas') || JSON.stringify([
-    { nombre: 'fecha', tipo: 'fecha' },
-    { nombre: 'codigo', tipo: 'texto' },
-    { nombre: 'geo', tipo: 'geo' },
-    { nombre: 'etiqueta', tipo: 'tag' }
+  let tags       = JSON.parse(localStorage.getItem('tags') || '["Entrada","Salida","Revisión","Urgente"]');
+  let columnas   = JSON.parse(localStorage.getItem('columnas') || JSON.stringify([
+    { nombre: 'fecha',    tipo: 'fecha'  },
+    { nombre: 'codigo',   tipo: 'texto'  },
+    { nombre: 'geo',      tipo: 'geo'    },
+    { nombre: 'etiqueta', tipo: 'tag'    }
   ]));
-  let scans = JSON.parse(localStorage.getItem('scans') || '[]');
+  let scans      = JSON.parse(localStorage.getItem('scans')     || '[]');
   let pendientes = JSON.parse(localStorage.getItem('pendientes') || '[]');
 
   document.getElementById('api-url-input').value = API_URL;
@@ -356,7 +509,7 @@ function doGet(e) {
   renderTagsSettings();
   checkTagsSection();
 
-  // ─── Tabs ───────────────────────────────────────────────────────────────────
+  // ── Tabs ───────────────────────────────────────────────────────────────────
   function showTab(name, el) {
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -364,57 +517,36 @@ function doGet(e) {
     el.classList.add('active');
   }
 
-  // ─── Scanner ────────────────────────────────────────────────────────────────
-  function toggleScanner() {
-    escaneando ? detener() : iniciar();
-  }
+  // ── Scanner ────────────────────────────────────────────────────────────────
+  function toggleScanner() { escaneando ? detener() : iniciar(); }
 
   function iniciar() {
-    const visor = document.getElementById('visor');
-    const idle  = document.getElementById('scanner-idle');
-    const btn   = document.getElementById('btn-scan');
-
-    visor.classList.add('activo');
-    idle.style.display = 'none';
+    document.getElementById('visor').classList.add('activo');
+    document.getElementById('scanner-idle').style.display = 'none';
+    const btn = document.getElementById('btn-scan');
     btn.textContent = '⏹ Detener escáner';
     btn.className = 'btn btn-danger';
     setEstado('Iniciando cámara...', 'leyendo');
     escaneando = true;
 
     scanner = new Html5Qrcode('reader', { verbose: false });
-
     Html5Qrcode.getCameras().then(cameras => {
-      if (!cameras || cameras.length === 0) {
-        setEstado('No se encontró ninguna cámara', 'err');
-        detener(); return;
-      }
+      if (!cameras || cameras.length === 0) { setEstado('No se encontró ninguna cámara', 'err'); detener(); return; }
       const cam = cameras.find(c => /back|rear|environment/i.test(c.label)) || cameras[cameras.length - 1];
-      scanner.start(
-        cam.id,
-        { fps: 10, qrbox: { width: 220, height: 220 } },
-        onScanExito, () => {}
-      ).then(() => {
-        setEstado('Apunta al código...', 'leyendo');
-      }).catch(err => {
-        setEstado('Error: ' + err, 'err');
-        detener();
-      });
-    }).catch(err => {
-      setEstado('Sin acceso a cámara: ' + err, 'err');
-      detener();
-    });
+      scanner.start(cam.id, { fps: 10, qrbox: { width: 220, height: 220 } }, onScanExito, () => {})
+        .then(() => setEstado('Apunta al código QR...', 'leyendo'))
+        .catch(err => { setEstado('Error: ' + err, 'err'); detener(); });
+    }).catch(err => { setEstado('Sin acceso a cámara: ' + err, 'err'); detener(); });
   }
 
   function detener() {
-    if (scanner) {
-      scanner.stop().catch(() => {}).finally(() => { scanner.clear(); scanner = null; });
-    }
+    if (scanner) { scanner.stop().catch(() => {}).finally(() => { scanner.clear(); scanner = null; }); }
     document.getElementById('visor').classList.remove('activo');
     document.getElementById('scanner-idle').style.display = 'flex';
-    document.getElementById('btn-scan').textContent = '📷 Iniciar escáner';
-    document.getElementById('btn-scan').className = 'btn btn-primary';
-    escaneando = false;
-    procesando = false;
+    const btn = document.getElementById('btn-scan');
+    btn.textContent = '📷 Iniciar escáner';
+    btn.className = 'btn btn-primary';
+    escaneando = false; procesando = false;
     setEstado('Listo para escanear', '');
   }
 
@@ -424,9 +556,7 @@ function doGet(e) {
     if (document.getElementById('opt-sonido').checked) reproducirSonido();
     hapticFeedback();
     enviar(texto);
-    if (document.getElementById('opt-continuo').checked) {
-      setTimeout(() => { procesando = false; }, 2500);
-    }
+    if (document.getElementById('opt-continuo').checked) setTimeout(() => { procesando = false; }, 2500);
   }
 
   function submitManual() {
@@ -437,19 +567,15 @@ function doGet(e) {
     hapticFeedback();
     enviar(val);
   }
+  document.getElementById('manual-input').addEventListener('keydown', e => { if (e.key === 'Enter') submitManual(); });
 
-  document.getElementById('manual-input').addEventListener('keydown', e => {
-    if (e.key === 'Enter') submitManual();
-  });
-
-  // ─── Envío a Google Apps Script ─────────────────────────────────────────────
+  // ── Envío a Google Apps Script ─────────────────────────────────────────────
   async function enviar(texto) {
     setEstado('Guardando...', 'leyendo');
     const ahora = new Date();
     const fechaHora = ahora.toLocaleDateString('es-MX', { day:'2-digit', month:'2-digit', year:'numeric' })
       + ' ' + ahora.toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
 
-    // Build row as ordered array + headers array (GAS will use these)
     const headers = columnas.map(c => c.nombre);
     const row = columnas.map(col => {
       if (col.tipo === 'fecha')  return fechaHora;
@@ -458,23 +584,20 @@ function doGet(e) {
       if (col.tipo === 'geo')    return geoData ? geoData.lat + ',' + geoData.lng : '';
       return '';
     });
-
     const payload = { headers, row };
 
-    // Save locally always
+    // Guardar localmente siempre
     const registro = {};
     headers.forEach((h, i) => { registro[h] = row[i]; });
     scans.push(registro);
     localStorage.setItem('scans', JSON.stringify(scans));
-
     cntTotal++; cntSesion++;
     localStorage.setItem('cnt_total', cntTotal);
     actualizarContadores();
     agregarHistorial(texto, fechaHora);
 
-    // Send to GAS
     if (!API_URL) {
-      setEstado('⚠ Sin URL — guardado localmente', 'err');
+      setEstado('⚠ Sin URL — guardado localmente', 'warn');
       pendientes.push(payload);
       localStorage.setItem('pendientes', JSON.stringify(pendientes));
       actualizarContadores();
@@ -482,73 +605,53 @@ function doGet(e) {
     }
 
     try {
-      // GAS requires no-cors OR a proper CORS-enabled deployment.
-      // We use no-cors and trust local save as source of truth.
       await fetch(API_URL, {
         method: 'POST',
-        mode: 'no-cors',          // GAS deployments require this from external origins
-        headers: { 'Content-Type': 'text/plain' }, // no-cors only allows simple content-types
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify(payload)
       });
-      setEstado('✓ Guardado — ' + texto.substring(0, 30), 'ok');
+      setEstado('✓ Guardado en Google Sheet — ' + texto.substring(0, 28), 'ok');
     } catch {
-      setEstado('⚠ Sin conexión — guardado localmente', 'err');
+      setEstado('⚠ Sin conexión — guardado localmente', 'warn');
       pendientes.push(payload);
       localStorage.setItem('pendientes', JSON.stringify(pendientes));
       actualizarContadores();
     }
   }
 
-  // Retry unsent records
   async function sincronizarPendientes() {
     if (!API_URL) { setEstado('Configura la URL de Apps Script primero', 'err'); return; }
-    if (pendientes.length === 0) { setEstado('No hay registros pendientes', 'ok'); return; }
-
-    setEstado('Sincronizando ' + pendientes.length + ' pendientes...', 'leyendo');
+    if (pendientes.length === 0) { setEstado('✓ No hay registros pendientes', 'ok'); return; }
+    setEstado('Sincronizando ' + pendientes.length + ' pendiente(s)...', 'leyendo');
     let enviados = 0;
     const fallidos = [];
-
     for (const payload of pendientes) {
       try {
-        await fetch(API_URL, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify(payload)
-        });
+        await fetch(API_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
         enviados++;
-      } catch {
-        fallidos.push(payload);
-      }
+      } catch { fallidos.push(payload); }
     }
-
     pendientes = fallidos;
     localStorage.setItem('pendientes', JSON.stringify(pendientes));
     actualizarContadores();
-    setEstado('✓ Sincronizados ' + enviados + ' · Pendientes: ' + fallidos.length, enviados > 0 ? 'ok' : 'err');
+    setEstado('✓ Sincronizados: ' + enviados + ' · Pendientes: ' + fallidos.length, enviados > 0 ? 'ok' : 'warn');
   }
 
-  // ─── Connection test ─────────────────────────────────────────────────────────
   async function probarConexion() {
     const url = document.getElementById('api-url-input').value.trim();
     if (!url) { setEstado('Ingresa la URL primero', 'err'); return; }
     setEstado('Probando conexión...', 'leyendo');
     try {
-      // doGet returns a JSON health check
-      const res = await fetch(url, { mode: 'cors' });
+      const res = await fetch(url);
       const json = await res.json();
-      if (json.status === 'ok') {
-        setEstado('✓ Conexión exitosa con Apps Script', 'ok');
-      } else {
-        setEstado('⚠ Respuesta inesperada: ' + JSON.stringify(json), 'err');
-      }
+      setEstado(json.status === 'ok' ? '✓ Conexión exitosa con Apps Script' : '⚠ Respuesta: ' + JSON.stringify(json), json.status === 'ok' ? 'ok' : 'warn');
     } catch {
-      // no-cors fallback — we can't read the response but at least we know it reached
-      setEstado('⚠ No se pudo leer respuesta (normal con no-cors). Prueba hacer un escaneo de prueba.', 'err');
+      setEstado('⚠ No se puede leer respuesta (es normal). Intenta escanear algo para confirmar.', 'warn');
     }
   }
 
-  // ─── Geo ─────────────────────────────────────────────────────────────────────
+  // ── Geo ───────────────────────────────────────────────────────────────────
   function toggleGeo() {
     const on = document.getElementById('geo-toggle').checked;
     const status = document.getElementById('geo-status');
@@ -557,19 +660,11 @@ function doGet(e) {
         geoData = { lat: pos.coords.latitude.toFixed(6), lng: pos.coords.longitude.toFixed(6) };
         status.textContent = geoData.lat + ', ' + geoData.lng;
         status.className = 'geo-status on';
-      }, () => {
-        document.getElementById('geo-toggle').checked = false;
-        status.textContent = 'Sin permiso';
-        status.className = 'geo-status';
-      });
-    } else {
-      geoData = null;
-      status.textContent = 'Desactivada';
-      status.className = 'geo-status';
-    }
+      }, () => { document.getElementById('geo-toggle').checked = false; status.textContent = 'Sin permiso'; status.className = 'geo-status'; });
+    } else { geoData = null; status.textContent = 'Desactivada'; status.className = 'geo-status'; }
   }
 
-  // ─── Historial ────────────────────────────────────────────────────────────────
+  // ── Historial ─────────────────────────────────────────────────────────────
   function agregarHistorial(texto, fechaHora) {
     const hist = document.getElementById('historial');
     const vacio = hist.querySelector('p');
@@ -581,7 +676,7 @@ function doGet(e) {
         <div class="codigo">${texto}</div>
         <div class="meta">${fechaHora}</div>
       </div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+      <div style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end">
         ${tagSeleccionado ? '<span class="tag-badge">'+tagSeleccionado+'</span>' : ''}
         ${geoData ? '<span class="geo-badge">📍</span>' : ''}
       </div>`;
@@ -589,7 +684,7 @@ function doGet(e) {
   }
 
   function limpiarHistorial() {
-    document.getElementById('historial').innerHTML = '<p style="font-size:13px;color:var(--text2);text-align:center;padding:16px">Los escaneos aparecerán aquí</p>';
+    document.getElementById('historial').innerHTML = '<p style="font-size:13px;color:var(--text2);text-align:center;padding:20px">Los escaneos aparecerán aquí</p>';
   }
 
   function exportarCSV() {
@@ -599,17 +694,14 @@ function doGet(e) {
     const csv = headers + '\n' + rows.join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'escaneos_' + new Date().toISOString().slice(0,10) + '.csv';
-    a.click();
-    URL.revokeObjectURL(url);
+    const a = document.createElement('a'); a.href = url;
+    a.download = 'escaneos_tec_' + new Date().toISOString().slice(0,10) + '.csv';
+    a.click(); URL.revokeObjectURL(url);
   }
 
-  // ─── Tags ────────────────────────────────────────────────────────────────────
+  // ── Tags ──────────────────────────────────────────────────────────────────
   function renderTagsChips() {
-    const wrap = document.getElementById('tags-chips');
-    wrap.innerHTML = '';
+    const wrap = document.getElementById('tags-chips'); wrap.innerHTML = '';
     tags.forEach(tag => {
       const chip = document.createElement('div');
       chip.className = 'tag-chip' + (tagSeleccionado === tag ? ' selected' : '');
@@ -618,51 +710,40 @@ function doGet(e) {
       wrap.appendChild(chip);
     });
   }
-
   function renderTagsSettings() {
-    const list = document.getElementById('tags-settings-list');
-    list.innerHTML = '';
+    const list = document.getElementById('tags-settings-list'); list.innerHTML = '';
     tags.forEach((tag, i) => {
-      const item = document.createElement('div');
-      item.className = 'tag-item';
+      const item = document.createElement('div'); item.className = 'tag-item';
       item.innerHTML = tag + '<button onclick="eliminarTag(' + i + ')">×</button>';
       list.appendChild(item);
     });
   }
-
   function agregarTag() {
     const val = document.getElementById('new-tag-input').value.trim();
     if (!val) return;
-    tags.push(val);
-    localStorage.setItem('tags', JSON.stringify(tags));
+    tags.push(val); localStorage.setItem('tags', JSON.stringify(tags));
     document.getElementById('new-tag-input').value = '';
     renderTagsChips(); renderTagsSettings();
   }
-
   function eliminarTag(i) {
-    tags.splice(i, 1);
-    localStorage.setItem('tags', JSON.stringify(tags));
+    tags.splice(i, 1); localStorage.setItem('tags', JSON.stringify(tags));
     renderTagsChips(); renderTagsSettings();
   }
-
   function checkTagsSection() {
     document.getElementById('tags-section').style.display = columnas.some(c => c.tipo === 'tag') ? 'block' : 'none';
   }
 
-  // ─── Columnas ────────────────────────────────────────────────────────────────
+  // ── Columnas ──────────────────────────────────────────────────────────────
   function renderColumnas() {
-    const list = document.getElementById('columns-list');
-    list.innerHTML = '';
+    const list = document.getElementById('columns-list'); list.innerHTML = '';
     columnas.forEach((col, i) => {
-      const row = document.createElement('div');
-      row.className = 'col-row';
+      const row = document.createElement('div'); row.className = 'col-row';
       row.innerHTML = '<input value="' + col.nombre + '" onchange="columnas[' + i + '].nombre=this.value;guardarColumnas()" />'
         + '<span class="col-type">' + col.tipo + '</span>'
         + '<button class="col-del" onclick="eliminarColumna(' + i + ')">×</button>';
       list.appendChild(row);
     });
   }
-
   function agregarColumna() {
     const nombre = document.getElementById('new-col-name').value.trim();
     const tipo   = document.getElementById('new-col-type').value;
@@ -671,61 +752,43 @@ function doGet(e) {
     document.getElementById('new-col-name').value = '';
     guardarColumnas(); checkTagsSection();
   }
+  function eliminarColumna(i) { columnas.splice(i, 1); guardarColumnas(); checkTagsSection(); }
+  function guardarColumnas() { localStorage.setItem('columnas', JSON.stringify(columnas)); renderColumnas(); }
 
-  function eliminarColumna(i) {
-    columnas.splice(i, 1);
-    guardarColumnas(); checkTagsSection();
-  }
-
-  function guardarColumnas() {
-    localStorage.setItem('columnas', JSON.stringify(columnas));
-    renderColumnas();
-  }
-
-  // ─── API ──────────────────────────────────────────────────────────────────────
+  // ── API ───────────────────────────────────────────────────────────────────
   function guardarAPI() {
     API_URL = document.getElementById('api-url-input').value.trim();
     localStorage.setItem('api_url', API_URL);
-    setEstado('URL guardada', 'ok');
+    setEstado('✓ URL guardada correctamente', 'ok');
     setTimeout(() => setEstado('Listo para escanear', ''), 2000);
   }
 
-  // ─── Copy GAS code ───────────────────────────────────────────────────────────
   function copiarGAS() {
     const code = document.getElementById('gas-code').textContent;
     navigator.clipboard.writeText(code).then(() => {
       setEstado('✓ Código copiado al portapapeles', 'ok');
       setTimeout(() => setEstado('Listo para escanear', ''), 2000);
-    }).catch(() => {
-      setEstado('No se pudo copiar, selecciona el texto manualmente', 'err');
-    });
+    }).catch(() => setEstado('Selecciona el texto manualmente', 'err'));
   }
 
-  // ─── Helpers ─────────────────────────────────────────────────────────────────
+  // ── Helpers ───────────────────────────────────────────────────────────────
   function setEstado(msg, clase) {
     const el = document.getElementById('estado');
-    el.textContent = msg;
-    el.className = clase;
+    el.textContent = msg; el.className = clase;
   }
-
   function actualizarContadores() {
     document.getElementById('cnt-total').textContent = cntTotal;
     document.getElementById('cnt-sesion').textContent = cntSesion;
     document.getElementById('cnt-pendiente').textContent = pendientes.length;
+    document.getElementById('box-pendiente').style.opacity = pendientes.length > 0 ? '1' : '0.5';
   }
-
-  function hapticFeedback() {
-    try { if (navigator.vibrate) navigator.vibrate([40, 30, 80]); } catch(e) {}
-  }
-
+  function hapticFeedback() { try { if (navigator.vibrate) navigator.vibrate([40, 30, 80]); } catch(e) {} }
   function reproducirSonido() {
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
+      const osc = ctx.createOscillator(); const gain = ctx.createGain();
       osc.connect(gain); gain.connect(ctx.destination);
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.type = 'sine'; osc.frequency.setValueAtTime(880, ctx.currentTime);
       gain.gain.setValueAtTime(0.3, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
       osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.25);
